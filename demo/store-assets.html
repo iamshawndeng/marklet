@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marklet Store Assets v2</title>
+    <style>
+      :root {
+        --brand: #c96442;
+        --brand-hover: #b45333;
+        --brand-tint: rgba(201, 100, 66, 0.12);
+        --green: #557144;
+        --ink: #141413;
+        --ink-2: #5e5d59;
+        --ink-3: #87867f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #d4d3ce;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        gap: 48px;
+        align-items: flex-start;
+      }
+      .frame {
+        position: relative;
+        overflow: hidden;
+        flex: none;
+      }
+      /* Render slides at 1.5x and promo at 2x so downsampling yields razor-sharp PNGs */
+      .slide {
+        width: 1280px;
+        height: 800px;
+        zoom: 1.5;
+      }
+      .promo-small {
+        width: 440px;
+        height: 280px;
+        zoom: 2;
+      }
+
+      .h1 {
+        margin: 0;
+        font-size: 44px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: -0.032em;
+        color: var(--ink);
+      }
+
+      /* ============================================================ */
+      /* SLIDE 1: Hero Light Mode (1280x800)                          */
+      /* ============================================================ */
+      #slide-1 {
+        background: radial-gradient(circle at 85% 10%, rgba(201, 100, 66, 0.08), transparent 42%),
+          linear-gradient(180deg, #fafaf8 0%, #f1f0ec 100%);
+        padding: 46px 56px 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .s1-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .brand-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand-lockup span {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .browser-win {
+        flex: 1;
+        background: #ffffff;
+        border: 1px solid #dfded8;
+        border-bottom: 0;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 24px 60px rgba(20, 20, 19, 0.12), 0 4px 12px rgba(20, 20, 19, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      }
+      .browser-chrome {
+        height: 44px;
+        background: #f6f6f4;
+        border-bottom: 1px solid #e6e5e0;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 12px;
+      }
+      .dots { display: flex; gap: 7px; }
+      .dots i { width: 11px; height: 11px; border-radius: 50%; background: #d6d5cf; display: block; }
+      .url-bar {
+        margin: 0 auto;
+        width: 380px;
+        height: 26px;
+        border-radius: 7px;
+        background: #ffffff;
+        border: 1px solid #e6e5e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .ext-icon-wrap { position: relative; width: 24px; height: 24px; }
+      .ext-badge {
+        position: absolute;
+        right: -4px;
+        bottom: -4px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 1px 4px;
+        border-radius: 99px;
+        line-height: 1.2;
+      }
+      .app-stage {
+        flex: 1;
+        position: relative;
+        background: #f8f9fb;
+        padding: 32px 348px 32px 38px;
+      }
+      .mock-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 26px;
+      }
+      .mock-title { font-size: 24px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; }
+      .mock-sub { font-size: 13.5px; color: #64748b; margin-top: 3px; }
+      .mock-btn-row { display: flex; gap: 10px; position: relative; }
+      .mock-btn {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #0f172a;
+      }
+      .mock-btn.primary {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+        color: #fff;
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
+      }
+      .mock-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .mock-kpi {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 18px 20px;
+        position: relative;
+      }
+      .mock-kpi.selected {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.12);
+      }
+      .kpi-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+      .kpi-val { font-size: 28px; font-weight: 700; color: #0f172a; margin-top: 6px; letter-spacing: -0.02em; }
+      .kpi-delta { font-size: 12px; color: #16a34a; margin-top: 5px; font-weight: 500; }
+      .mock-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .mock-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+      .mock-card-banner { height: 96px; background: linear-gradient(135deg, #3b82f6, #6366f1); }
+      .mock-card-banner.b2 { background: linear-gradient(135deg, #10b981, #0ea5e9); }
+      .mock-card-body { padding: 16px 18px; }
+      .mock-card-title { font-size: 15px; font-weight: 600; color: #0f172a; }
+      .mock-card-text { font-size: 12.5px; color: #64748b; margin-top: 4px; }
+
+      .m-pin {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px 15px 15px 2px;
+        background: #ffffff;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+      .m-pin span {
+        width: 24px;
+        height: 24px;
+        border-radius: 12px 12px 12px 2px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+
+      .m-sidebar {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        bottom: 16px;
+        width: 312px;
+        background: #ffffff;
+        border: 1px solid #e6e5e0;
+        border-radius: 14px;
+        box-shadow: 0 12px 32px rgba(20, 20, 19, 0.12), 0 2px 6px rgba(20, 20, 19, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .m-sb-head { padding: 14px 16px 12px; border-bottom: 1px solid #f0efeb; }
+      .m-sb-row { display: flex; align-items: center; gap: 8px; }
+      .m-sb-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+      .m-count {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 99px;
+        background: #f6f6f4;
+        color: var(--ink-2);
+      }
+      .m-tabs {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 3px;
+        border-radius: 9px;
+        background: #f6f6f4;
+      }
+      .m-tab {
+        height: 28px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .m-tab.active {
+        background: #fff;
+        color: var(--ink);
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.07);
+      }
+      .m-tab-pill {
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 0 6px;
+        border-radius: 99px;
+        background: var(--brand-tint);
+        color: var(--brand-hover);
+      }
+      .m-sb-body { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+      .m-item { padding: 12px 14px; border-radius: 12px; border: 1px solid #e6e5e0; background: #fff; }
+      .m-item.active { border-color: rgba(201, 100, 66, 0.45); background: rgba(201, 100, 66, 0.04); }
+      .m-item-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+      .m-avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #557144;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+      .m-author { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+      .m-time { font-size: 11px; color: var(--ink-3); }
+      .m-num {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: var(--brand-tint);
+        color: var(--brand-hover);
+      }
+      .m-text { font-size: 12.5px; line-height: 1.45; color: var(--ink); margin-bottom: 8px; }
+      .m-chip {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 5px;
+        background: #f6f6f4;
+        color: var(--ink-2);
+        font-size: 11px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .m-sb-foot { padding: 12px 14px 14px; border-top: 1px solid #f0efeb; }
+      .m-brief-btn {
+        width: 100%;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+      }
+      .m-brief-note { margin: 7px 0 0; text-align: center; font-size: 11px; color: var(--ink-3); }
+      .m-toolbar {
+        position: absolute;
+        left: 340px;
+        bottom: 24px;
+        height: 46px;
+        padding: 5px 8px;
+        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid #e6e5e0;
+        box-shadow: 0 12px 32px rgba(20, 20, 19, 0.14);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .m-tool { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: #3d3d3a; }
+      .m-tool.on { background: var(--brand-tint); color: var(--brand); }
+      .m-div { width: 1px; height: 18px; background: #e6e5e0; margin: 0 2px; }
+
+      /* ============================================================ */
+      /* SLIDE 2: Dark Mode + Export Design Brief (1280x800)          */
+      /* ============================================================ */
+      #slide-2 {
+        background: radial-gradient(circle at 20% 10%, rgba(200, 100, 66, 0.16), transparent 45%),
+          linear-gradient(180deg, #191917 0%, #131311 100%);
+        padding: 54px 64px 56px;
+        display: flex;
+        flex-direction: column;
+        color: #f3f3ef;
+      }
+      #slide-2 .h1 { color: #f3f3ef; }
+      .s2-grid {
+        margin-top: 42px;
+        flex: 1;
+        display: grid;
+        grid-template-columns: 490px 1fr;
+        gap: 32px;
+        align-items: center;
+      }
+      .dark-card {
+        background: #1f1f1d;
+        border: 1px solid #383834;
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+      .dc-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #2e2e2a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        font-weight: 600;
+      }
+      .dc-pill {
+        padding: 2px 8px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(200, 100, 66, 0.2);
+        color: #e89274;
+      }
+      .dc-body { padding: 18px 20px; }
+      .dc-msg { display: flex; gap: 10px; margin-bottom: 14px; }
+      .dc-msg-text { font-size: 14px; line-height: 1.5; color: #f3f3ef; margin-top: 3px; }
+      .dc-target {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #2a2a27;
+        font-size: 12.5px;
+        color: #a8a8a1;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        margin-bottom: 14px;
+      }
+      .dc-snap {
+        border-radius: 10px;
+        background: #141518;
+        padding: 22px;
+        border: 1px solid #2e2e2a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .dc-snap-box {
+        border: 2px solid #c96442;
+        border-radius: 10px;
+        padding: 14px 24px;
+        background: rgba(201, 100, 66, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dc-snap-btn-sec {
+        background: #22242a;
+        border: 1px solid #32353e;
+        color: #d4d4cd;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 9px 14px;
+        border-radius: 8px;
+      }
+      .dc-snap-btn {
+        background: #2563eb;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 9px 16px;
+        border-radius: 8px;
+      }
+      .dc-foot { padding: 14px 18px; border-top: 1px solid #2e2e2a; }
+      .dc-reply {
+        height: 40px;
+        border-radius: 10px;
+        background: #2a2a27;
+        border: 1px solid #383834;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #7c7c76;
+        font-size: 13px;
+      }
+      .zip-panel {
+        background: #1f1f1d;
+        border: 1px solid #383834;
+        border-radius: 16px;
+        padding: 28px 30px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+      .zip-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+      .zip-title {
+        font-size: 16px;
+        font-weight: 600;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: #f3f3ef;
+      }
+      .zip-tag {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 11px;
+        border-radius: 99px;
+        background: rgba(127, 176, 105, 0.16);
+        color: #7fb069;
+      }
+      .zip-tree {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13.5px;
+        line-height: 1.8;
+        color: #d4d4cd;
+        background: #161614;
+        border: 1px solid #2e2e2a;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+      }
+      .zip-tree .dim { color: #7c7c76; }
+      .zip-tree .acc { color: #e89274; }
+      .md-preview {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        color: #a8a8a1;
+        background: #161614;
+        border: 1px solid #2e2e2a;
+        border-radius: 10px;
+        padding: 18px 20px;
+      }
+      .md-preview strong { color: #f3f3ef; }
+      .md-preview .h { color: #e89274; font-weight: 600; }
+
+      /* ============================================================ */
+      /* SLIDE 3: Privacy & Light/Dark Popup Showcase (1280x800)      */
+      /* ============================================================ */
+      #slide-3 {
+        background: radial-gradient(circle at 50% 100%, rgba(201, 100, 66, 0.08), transparent 50%),
+          linear-gradient(180deg, #ffffff 0%, #f5f5f2 100%);
+        padding: 68px 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .popup-pair {
+        margin-top: 56px;
+        display: flex;
+        gap: 44px;
+        align-items: center;
+        justify-content: center;
+      }
+      .popup-mock {
+        width: 396px;
+        border-radius: 18px;
+        border: 1px solid #e6e5e0;
+        background: #ffffff;
+        box-shadow: 0 24px 60px rgba(20, 20, 19, 0.12), 0 4px 12px rgba(20, 20, 19, 0.05);
+        text-align: left;
+        overflow: hidden;
+      }
+      .popup-mock.dark {
+        background: #1f1f1d;
+        border-color: #383834;
+        color: #f3f3ef;
+        box-shadow: 0 28px 70px rgba(0, 0, 0, 0.36);
+      }
+      .pm-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 16px 18px 14px;
+        border-bottom: 1px solid #f0efeb;
+      }
+      .popup-mock.dark .pm-head { border-bottom-color: #2e2e2a; }
+      .pm-ver {
+        font-size: 11.5px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        background: #f6f6f4;
+        color: #87867f;
+      }
+      .popup-mock.dark .pm-ver { background: #2a2a27; color: #7c7c76; }
+      .pm-sec { padding: 20px 18px; }
+      .pm-title { font-size: 15.5px; font-weight: 600; }
+      .pm-host { font-size: 12.5px; color: #87867f; margin-top: 3px; }
+      .pm-chips { display: flex; gap: 7px; margin-top: 12px; }
+      .pm-chip {
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 99px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .pm-chip.green { background: rgba(127, 176, 105, 0.16); color: #7fb069; }
+      .pm-chip.open { background: rgba(200, 100, 66, 0.18); color: #e89274; }
+      .pm-btn {
+        margin-top: 16px;
+        width: 100%;
+        height: 44px;
+        border-radius: 11px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 14.5px;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+      }
+      .pm-btn.stop {
+        background: #2a2a27;
+        border: 1px solid #383834;
+        color: #f3f3ef;
+      }
+      .pm-foot {
+        padding: 13px 18px 15px;
+        border-top: 1px solid #f0efeb;
+        font-size: 12px;
+        color: #87867f;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .popup-mock.dark .pm-foot { border-top-color: #2e2e2a; color: #a8a8a1; }
+      .pm-dot { width: 6px; height: 6px; border-radius: 50%; background: #a8a29e; }
+      .pm-dot.on { background: #7fb069; }
+
+      /* ============================================================ */
+      /* SMALL PROMO TILE (440x280, 2x supersampled)                  */
+      /* ============================================================ */
+      #promo-small {
+        background: radial-gradient(circle at 85% 18%, rgba(201, 100, 66, 0.24), transparent 55%),
+          linear-gradient(155deg, #1d1d1b 0%, #141413 100%);
+        padding: 34px 36px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: #f3f3ef;
+      }
+      .promo-top { display: flex; align-items: center; justify-content: space-between; }
+      .promo-pins { display: flex; gap: 8px; }
+      .promo-pin {
+        width: 28px;
+        height: 28px;
+        border-radius: 14px 14px 14px 3px;
+        background: #c96442;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 4px 12px rgba(201, 100, 66, 0.35);
+      }
+      .promo-pin.p2 { background: #2a2a27; border: 1px solid #44443f; color: #d4d4cd; box-shadow: none; }
+      .promo-title {
+        margin: 0;
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+      }
+      .promo-sub {
+        margin: 6px 0 0;
+        font-size: 15.5px;
+        line-height: 1.35;
+        color: #b4b4ad;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ================= SLIDE 1 (1280x800) ================= -->
+    <div id="slide-1" class="frame slide">
+      <div class="s1-head">
+        <h1 class="h1">Visual comments on any UI.</h1>
+        <div class="brand-lockup">
+          <svg width="30" height="30" viewBox="0 0 128 128" fill="none">
+            <rect width="128" height="128" rx="30" fill="#EAE8E0" />
+            <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+            <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+          </svg>
+          <span>Marklet</span>
+        </div>
+      </div>
+
+      <div class="browser-win">
+        <div class="browser-chrome">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="url-bar">staging.acmecloud.app/dashboard</div>
+          <div class="ext-icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 128 128" fill="none">
+              <rect width="128" height="128" rx="30" fill="#F0EEE6" />
+              <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+              <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+            </svg>
+            <span class="ext-badge">2</span>
+          </div>
+        </div>
+
+        <div class="app-stage">
+          <div class="mock-nav">
+            <div>
+              <div class="mock-title">Workspace Overview</div>
+              <div class="mock-sub">Production clusters and release metrics</div>
+            </div>
+            <div class="mock-btn-row">
+              <div class="mock-btn">Export CSV</div>
+              <div class="mock-btn primary">+ New Deploy</div>
+              <div class="m-pin" style="right: -12px; top: -18px;"><span>1</span></div>
+            </div>
+          </div>
+
+          <div class="mock-grid">
+            <div class="mock-kpi">
+              <div class="kpi-label">Active Instances</div>
+              <div class="kpi-val">128</div>
+              <div class="kpi-delta">+12% this week</div>
+            </div>
+            <div class="mock-kpi selected">
+              <div class="kpi-label">Monthly Spend</div>
+              <div class="kpi-val">$8,420</div>
+              <div class="kpi-delta" style="color: #c96442;">-3.4% vs last month</div>
+              <div class="m-pin" style="right: -12px; top: -14px;"><span>2</span></div>
+            </div>
+            <div class="mock-kpi">
+              <div class="kpi-label">Uptime SLA</div>
+              <div class="kpi-val">99.98%</div>
+              <div class="kpi-delta">Healthy</div>
+            </div>
+          </div>
+
+          <div class="mock-cards">
+            <div class="mock-card">
+              <div class="mock-card-banner"></div>
+              <div class="mock-card-body">
+                <div class="mock-card-title">Atlas Analytics</div>
+                <div class="mock-card-text">Real-time streaming telemetry &amp; dashboards.</div>
+              </div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-banner b2"></div>
+              <div class="mock-card-body">
+                <div class="mock-card-title">Edge Gateway</div>
+                <div class="mock-card-text">Global API routing and token validation.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-toolbar">
+            <div class="m-tool">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5c0 3.04-2.46 5.5-5.5 5.5H3.25l1.05-2.1A5.5 5.5 0 0 1 8 2.5Z"/><path d="M8 5.75v4.5M5.75 8h4.5"/></svg>
+            </div>
+            <div class="m-tool on">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3" width="11" height="10" rx="2"/><path d="M10 3v10"/></svg>
+            </div>
+            <div class="m-div"></div>
+            <div class="m-tool"><div class="m-avatar" style="width:22px;height:22px;">S</div></div>
+            <div class="m-tool">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.25 4.25l7.5 7.5M11.75 4.25l-7.5 7.5"/></svg>
+            </div>
+          </div>
+
+          <aside class="m-sidebar">
+            <div class="m-sb-head">
+              <div class="m-sb-row">
+                <span class="m-sb-title">Comments</span>
+                <span class="m-count">2</span>
+                <span style="flex:1"></span>
+                <span style="color:#87867f;font-size:16px;">×</span>
+              </div>
+              <div class="m-tabs">
+                <div class="m-tab active"><span>Open</span><span class="m-tab-pill">2</span></div>
+                <div class="m-tab"><span>Resolved</span><span class="m-count">0</span></div>
+              </div>
+            </div>
+            <div class="m-sb-body">
+              <div class="m-item active">
+                <div class="m-item-head">
+                  <div class="m-avatar">S</div>
+                  <span class="m-author">Shawn</span>
+                  <span class="m-time">2m ago</span>
+                  <span class="m-num">#1</span>
+                </div>
+                <div class="m-text">Tighten horizontal padding and match the secondary button height.</div>
+                <span class="m-chip">&lt;button&gt; “+ New Deploy”</span>
+              </div>
+              <div class="m-item">
+                <div class="m-item-head">
+                  <div class="m-avatar" style="background:#6a9bcc;">A</div>
+                  <span class="m-author">Alex</span>
+                  <span class="m-time">Just now</span>
+                  <span class="m-num">#2</span>
+                </div>
+                <div class="m-text">Use tabular numerals for the spend figure so digits align cleanly.</div>
+                <span class="m-chip">&lt;div&gt; “Monthly Spend”</span>
+              </div>
+            </div>
+            <div class="m-sb-foot">
+              <div class="m-brief-btn">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.75v7.5M5 7.5l3 3 3-3M3 12.75h10"/></svg>
+                <span>Export Design Brief</span>
+              </div>
+              <p class="m-brief-note">Downloads a .zip ready for AI coding tools</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SLIDE 2 (1280x800) ================= -->
+    <div id="slide-2" class="frame slide">
+      <h1 class="h1">Export a Design Brief in one click.</h1>
+
+      <div class="s2-grid">
+        <div class="dark-card">
+          <div class="dc-head">
+            <span style="color:#a8a8a1;">#1</span>
+            <span class="dc-pill">Open</span>
+            <span style="flex:1;"></span>
+            <span style="color:#7c7c76;font-size:13px;">✓ &nbsp; ×</span>
+          </div>
+          <div class="dc-body">
+            <div class="dc-msg">
+              <div class="m-avatar" style="width:24px;height:24px;flex:none;">S</div>
+              <div>
+                <div style="font-size:12.5px;font-weight:600;">Shawn <span style="color:#7c7c76;font-weight:400;">· 2m ago</span></div>
+                <div class="dc-msg-text">Tighten horizontal padding and align the plus icon vertically with the label.</div>
+              </div>
+            </div>
+            <div class="dc-target">&lt;button&gt; “+ New Deploy”</div>
+            <div class="dc-snap">
+              <div class="dc-snap-btn-sec" style="margin-right:10px;">Export CSV</div>
+              <div class="dc-snap-box">
+                <div class="dc-snap-btn">+ New Deploy</div>
+              </div>
+            </div>
+          </div>
+          <div class="dc-foot">
+            <div class="dc-reply">
+              <span>Reply…</span>
+              <span style="width:24px;height:24px;border-radius:50%;background:#383834;display:grid;place-items:center;color:#a8a8a1;font-size:12px;">↑</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="zip-panel">
+          <div class="zip-head">
+            <span class="zip-title">marklet-brief-2026-11-21.zip</span>
+            <span class="zip-tag">Teammates &amp; AI Ready</span>
+          </div>
+          <div class="zip-tree">
+            <div><span class="acc">brief.md</span> <span class="dim">— comments, selectors &amp; replies</span></div>
+            <div>screenshots/</div>
+            <div>&nbsp;&nbsp;├── <span class="acc">comment-1.jpg</span></div>
+            <div>&nbsp;&nbsp;└── <span class="acc">comment-2.jpg</span></div>
+          </div>
+          <div class="md-preview">
+            <div class="h">### #1 · &lt;button&gt; “+ New Deploy”</div>
+            <div>- <strong>Selector</strong>: <code>button#btn-new-deploy</code></div>
+            <div>- <strong>Element Box</strong>: 136×36px at (712, 96)</div>
+            <div>- <strong>Context</strong>: <code>![Comment #1](./screenshots/comment-1.jpg)</code></div>
+            <div style="margin-top:8px;"><strong>Feedback</strong> (Shawn):</div>
+            <div>&gt; Tighten horizontal padding and align the plus icon vertically with the label.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SLIDE 3 (1280x800) ================= -->
+    <div id="slide-3" class="frame slide">
+      <h1 class="h1">Private by design. Light &amp; Dark.</h1>
+
+      <div class="popup-pair">
+        <div class="popup-mock">
+          <div class="pm-head">
+            <svg width="26" height="26" viewBox="0 0 128 128" fill="none">
+              <rect width="128" height="128" rx="30" fill="#F0EEE6" />
+              <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+              <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+            </svg>
+            <strong style="font-size:15px;">Marklet</strong>
+            <span class="pm-ver">v0.1.0</span>
+            <span style="flex:1"></span>
+            <span style="font-size:12px;color:#5e5d59;">Feedback ↗ &nbsp; ···</span>
+          </div>
+          <div class="pm-sec">
+            <div class="pm-title">Workspace Overview · Acme Cloud</div>
+            <div class="pm-host">https://staging.acmecloud.app</div>
+            <div class="pm-btn">Start Review</div>
+          </div>
+          <div class="pm-foot">
+            <span class="pm-dot"></span>
+            <span>Start review to enable Marklet on this tab</span>
+          </div>
+        </div>
+
+        <div class="popup-mock dark">
+          <div class="pm-head">
+            <svg width="26" height="26" viewBox="0 0 128 128" fill="none">
+              <rect width="128" height="128" rx="30" fill="#F0EEE6" />
+              <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+              <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+            </svg>
+            <strong style="font-size:15px;">Marklet</strong>
+            <span class="pm-ver">v0.1.0</span>
+            <span style="flex:1"></span>
+            <span style="font-size:12px;color:#a8a8a1;">Feedback ↗ &nbsp; ···</span>
+          </div>
+          <div class="pm-sec">
+            <div class="pm-title">Workspace Overview · Acme Cloud</div>
+            <div class="pm-host">https://staging.acmecloud.app</div>
+            <div class="pm-chips">
+              <span class="pm-chip green"><span style="width:5px;height:5px;border-radius:50%;background:#7fb069;"></span>Reviewing</span>
+              <span class="pm-chip open">2 open comments</span>
+            </div>
+            <div class="pm-btn stop">Stop Review</div>
+          </div>
+          <div class="pm-foot">
+            <span class="pm-dot on"></span>
+            <span>Saved privately on your device</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SMALL PROMO TILE (440x280, 2x supersampled) ================= -->
+    <div id="promo-small" class="frame promo-small">
+      <div class="promo-top">
+        <svg width="56" height="56" viewBox="0 0 128 128" fill="none">
+          <rect width="128" height="128" rx="30" fill="#F0EEE6" />
+          <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+          <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+        </svg>
+        <div class="promo-pins">
+          <div class="promo-pin">1</div>
+          <div class="promo-pin p2">2</div>
+        </div>
+      </div>
+      <div>
+        <h2 class="promo-title">Marklet</h2>
+        <p class="promo-sub">Visual comments for UI.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -4,6 +4,13 @@ Leave element-level comments on any webpage or local HTML prototype for async de
 
 Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript + Vite + Preact) with an isolated Shadow DOM overlay, automatic Light & Dark mode, and a strict least-privilege security model.
 
+![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
+
+<p align="center">
+  <img src="./docs/images/screenshot-2-brief.png" alt="Export a Design Brief in one click" width="49%" />
+  <img src="./docs/images/screenshot-3-privacy.png" alt="Private by design. Light & Dark." width="49%" />
+</p>
+
 ## Highlights
 - **Explicit, least-privilege activation**: Uses only `activeTab`, `scripting`, and `storage` — zero `<all_urls>`, zero background tab monitoring, zero network requests. Marklet never touches a page until you click **Start Review**.
 - **Resilient element anchoring**: Composite DOM anchoring (`data-testid` → stable `id` → semantic CSS selector → structural path + text/geometry fallback) with modal/dialog context detection.
