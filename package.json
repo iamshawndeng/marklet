@@ -1,0 +1,23 @@
+{
+  "name": "marklet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Marklet — Visual Comments for Async and AI Workflows. Leave element-level comments on any webpage or prototype for async design feedback, team handoff, and agentic workflows.",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run check:layers && npm run typecheck && node scripts/build.mjs --dev",
+    "build": "npm run check:layers && npm run typecheck && node scripts/build.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "typecheck": "tsc --noEmit",
+    "check:layers": "node scripts/check-layers.mjs",
+    "clean": "rm -rf dist release"
+  },
+  "dependencies": {
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.7",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8"
+  }
+}

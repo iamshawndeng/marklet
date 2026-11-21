@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marklet</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --brand: #c96442;
+        --brand-hover: #b45333;
+        --brand-text: #b45333;
+        --brand-tint: rgba(201, 100, 66, 0.12);
+        --green: #557144;
+        --green-tint: #edf3e8;
+        --amber: #a85d1e;
+        --amber-tint: #fdf6ec;
+        --amber-border: #f3dbb9;
+        --red: #c44536;
+        --red-hover-bg: #fdf2f0;
+        --bg: #ffffff;
+        --bg-2: #f6f6f4;
+        --bg-hover: #eeede9;
+        --border: #e6e5e0;
+        --border-sub: #f0efeb;
+        --text: #141413;
+        --text-2: #5e5d59;
+        --text-3: #87867f;
+        --shadow-menu: 0 10px 26px rgba(20, 20, 19, 0.14);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --brand: #c86442;
+          --brand-hover: #d67352;
+          --brand-text: #e89274;
+          --brand-tint: rgba(200, 100, 66, 0.18);
+          --green: #7fb069;
+          --green-tint: rgba(127, 176, 105, 0.16);
+          --amber: #e2a25a;
+          --amber-tint: rgba(226, 162, 90, 0.14);
+          --amber-border: rgba(226, 162, 90, 0.3);
+          --red: #e06c5c;
+          --red-hover-bg: rgba(224, 108, 92, 0.14);
+          --bg: #1f1f1d;
+          --bg-2: #2a2a27;
+          --bg-hover: #343430;
+          --border: #383834;
+          --border-sub: #2e2e2a;
+          --text: #f3f3ef;
+          --text-2: #a8a8a1;
+          --text-3: #7c7c76;
+          --shadow-menu: 0 12px 30px rgba(0, 0, 0, 0.5);
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        width: 316px;
+        background: var(--bg);
+        color: var(--text);
+        font: 400 13px/1.45 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        letter-spacing: -0.006em;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+      }
+      .head {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 12px 12px 16px;
+        border-bottom: 1px solid var(--border-sub);
+      }
+      .head-logo {
+        width: 24px;
+        height: 24px;
+        display: block;
+        flex: none;
+      }
+      .brand { font-size: 14px; font-weight: 600; }
+      .ver {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-3);
+        background: var(--bg-2);
+        padding: 1px 7px;
+        border-radius: 999px;
+      }
+      .spacer { flex: 1; }
+      .head-feedback {
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--text-2);
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        transition: background 100ms ease, color 100ms ease;
+      }
+      .head-feedback:hover {
+        background: var(--bg-2);
+        color: var(--text);
+      }
+      .more-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        color: var(--text-2);
+        transition: background 100ms ease, color 100ms ease;
+      }
+      .more-btn:hover { background: var(--bg-2); color: var(--text); }
+      .menu {
+        position: absolute;
+        top: 46px;
+        right: 12px;
+        width: 196px;
+        padding: 4px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow-menu);
+        z-index: 20;
+      }
+      .menu-sep {
+        height: 1px;
+        margin: 4px 6px;
+        background: var(--border-sub);
+      }
+      .menu-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: var(--text);
+        text-align: left;
+      }
+      .menu-item:hover:not(:disabled) { background: var(--bg-2); }
+      .menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
+      .menu-item.danger { color: var(--red); }
+      .menu-item.danger:hover:not(:disabled) { background: var(--red-hover-bg); }
+
+      .sec { padding: 14px 16px; }
+      .sec + .sec { border-top: 1px solid var(--border-sub); }
+      .sec-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 9px;
+      }
+      .page-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .page-title {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .live-pill {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--green);
+        background: var(--green-tint);
+      }
+      .live-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+      .page-host {
+        font-size: 11.5px;
+        color: var(--text-3);
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .marks-meta {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .mark-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--bg-2);
+        color: var(--text-2);
+      }
+      .mark-chip.open {
+        background: var(--brand-tint);
+        color: var(--brand-text);
+      }
+
+      .primary-btn {
+        margin-top: 13px;
+        width: 100%;
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 10px;
+        background: var(--brand);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 120ms ease;
+      }
+      .primary-btn:hover:not(:disabled) { background: var(--brand-hover); }
+      .primary-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+      .stop-btn {
+        margin-top: 13px;
+        width: 100%;
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-2);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 120ms ease, border-color 120ms ease;
+      }
+      .stop-btn:hover:not(:disabled) { background: var(--bg-hover); border-color: #d6d3cb; }
+      .stop-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+      .note {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--bg-2);
+        color: var(--text-2);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .warn-box {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--amber-tint);
+        border: 1px solid var(--amber-border);
+        color: var(--amber);
+        font-size: 11.5px;
+        line-height: 1.45;
+      }
+      .warn-link {
+        margin-top: 6px;
+        display: inline-flex;
+        align-items: center;
+        font-weight: 600;
+        color: var(--amber);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .recent-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+      .recent-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        transition: background 100ms ease, border-color 100ms ease;
+      }
+      .recent-row:hover { background: var(--bg-2); border-color: #d6d3cb; }
+      .recent-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        padding: 8px 6px 8px 10px;
+        text-align: left;
+      }
+      .recent-main { flex: 1; min-width: 0; }
+      .recent-title {
+        font-size: 12.5px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .recent-sub {
+        font-size: 11px;
+        color: var(--text-3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pill {
+        flex: none;
+        min-width: 22px;
+        height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+        background: var(--bg-2);
+        color: var(--text-2);
+      }
+      .pill.open { background: var(--brand-tint); color: var(--brand-hover); }
+      .del-btn {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        margin-right: 6px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        color: var(--text-3);
+        opacity: 0;
+        transition: opacity 100ms ease, background 100ms ease, color 100ms ease;
+      }
+      .recent-row:hover .del-btn,
+      .del-btn:focus-visible { opacity: 1; }
+      .del-btn:hover { background: var(--bg-hover); color: var(--red); }
+
+      .status {
+        margin: 0 16px 10px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--brand-hover);
+        background: var(--brand-tint);
+      }
+
+      .foot {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 16px 13px;
+        border-top: 1px solid var(--border-sub);
+        font-size: 11px;
+        color: var(--text-3);
+      }
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex: none;
+        background: #a8a29e;
+      }
+      .status-dot.active {
+        background: var(--green);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./popup.tsx"></script>
+  </body>
+</html>
