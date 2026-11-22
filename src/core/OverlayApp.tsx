@@ -11,6 +11,7 @@ import type {
   AuthAdapter,
   CommentThread,
   ElementAnchor,
+  SitePageSummary,
   StorageAdapter,
   UserProfile,
 } from '../adapters/types';
@@ -33,13 +34,17 @@ export interface OverlayAppProps {
   /** Shadow host element – excluded from picking and click-outside detection. */
   hostElement: Element;
   defaultEnabled?: boolean;
+  defaultSidebarOpen?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  onSidebarOpenChange?: (open: boolean) => void;
   /** Optional imperative handle so host shells (extension popup, VS Code command) can toggle the overlay. */
   onControllerReady?: (controller: OverlayController) => void;
   /** Hide the bottom-right floating launcher when disabled (used by extension mode where the toolbar popup opens Marklet). */
   hideFabWhenDisabled?: boolean;
   /** Optional host-provided screenshot capturer for visual context in threads & AI briefs. */
   captureSnapshot?: (rect: DOMRect) => Promise<string | undefined>;
+  /** Optional host-provided same-origin navigation handler (keeps review active across reloads). */
+  onNavigatePage?: (url: string) => void;
 }
 
 interface Draft {
@@ -48,6 +53,13 @@ interface Draft {
 }
 
 type HiddenReason = 'scrolled' | 'occluded' | 'hidden-overlay' | 'hidden';
+type ToastTone = 'success' | 'info' | 'error';
+
+interface ToastState {
+  id: number;
+  message: string;
+  tone: ToastTone;
+}
 
 interface PinGeo {
   x: number;
@@ -75,7 +87,7 @@ export function OverlayApp(props: OverlayAppProps) {
   const [picking, setPicking] = useState(false);
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpenState] = useState(Boolean(props.defaultSidebarOpen));
   const [sidebarTab, setSidebarTab] = useState<'open' | 'resolved'>('open');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
@@ -83,32 +95,100 @@ export function OverlayApp(props: OverlayAppProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [flash, setFlash] = useState<{ id: string; seq: number } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [otherSitePages, setOtherSitePages] = useState<SitePageSummary[]>([]);
   const [resolveVersion, setResolveVersion] = useState(0);
   const [, setTick] = useState(0);
 
   const layerRef = useRef<HTMLDivElement>(null);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarOpenRef.current = sidebarOpen;
+  /** Explicit user sidebar preference for this session (`undefined` = auto-open if page has comments). */
+  const sidebarPrefRef = useRef<boolean | undefined>(props.defaultSidebarOpen);
+  const threadsLoadedRef = useRef(false);
+  const threadsCountRef = useRef(0);
+  const pendingAutoOpenRef = useRef(Boolean(props.defaultEnabled && props.defaultSidebarOpen === undefined));
+  /** True when the sidebar temporarily yielded to avoid covering a focused element. */
+  const sidebarYieldedRef = useRef(false);
   const flashTimer = useRef<number>();
   const toastTimer = useRef<number>();
   /** Tracks the last page button/link clicked outside any overlay, used to help reopen dialogs later. */
   const lastTriggerRef = useRef<{ selector: string; label: string } | null>(null);
 
+  const setSidebarOpen = useCallback(
+    (next: boolean, opts?: { yielded?: boolean; persist?: boolean }) => {
+      sidebarOpenRef.current = next;
+      setSidebarOpenState(next);
+      const yielded = Boolean(opts?.yielded);
+      sidebarYieldedRef.current = yielded;
+      if (opts?.persist !== false) {
+        const pref = next || yielded;
+        sidebarPrefRef.current = pref;
+        props.onSidebarOpenChange?.(pref);
+      }
+    },
+    [props.onSidebarOpenChange],
+  );
+
+  const restoreYieldedSidebar = useCallback(() => {
+    if (sidebarYieldedRef.current) {
+      setSidebarOpen(true, { yielded: false });
+    }
+  }, [setSidebarOpen]);
+
+  /**
+   * Keep the Comments sidebar open when clicking a comment unless the target element
+   * (or narrow viewport) would be occluded by the sidebar; auto-restore it once the user
+   * switches to an uncovered comment or dismisses the card.
+   */
+  const syncSidebarForTarget = useCallback(
+    (el: Element | null | undefined, fallbackRight?: number) => {
+      if (!sidebarOpenRef.current && !sidebarYieldedRef.current) return;
+      const sidebarLeft = window.innerWidth - SIDEBAR_OFFSET;
+      const narrow = sidebarLeft < CARD_W + 48;
+      const rightEdge = el && isRendered(el) ? el.getBoundingClientRect().right : fallbackRight;
+      const covered = narrow || (rightEdge !== undefined && rightEdge > sidebarLeft);
+      if (covered) {
+        if (sidebarOpenRef.current) {
+          setSidebarOpen(false, { yielded: true });
+        }
+      } else if (sidebarYieldedRef.current) {
+        setSidebarOpen(true, { yielded: false });
+      }
+    },
+    [setSidebarOpen],
+  );
+
   const setEnabled = useCallback(
     (next: boolean) => {
+      const wasEnabled = enabledRef.current;
       enabledRef.current = next;
       setEnabledState(next);
       props.onEnabledChange?.(next);
       if (!next) {
+        pendingAutoOpenRef.current = false;
         setPicking(false);
         setDraft(null);
         setActiveId(null);
-        setSidebarOpen(false);
+        setSidebarOpen(false, { yielded: false, persist: false });
         setUserMenuOpen(false);
+      } else if (!wasEnabled) {
+        if (sidebarPrefRef.current === true) {
+          setSidebarOpen(true, { yielded: false, persist: false });
+        } else if (sidebarPrefRef.current === undefined) {
+          if (threadsLoadedRef.current) {
+            if (threadsCountRef.current > 0) {
+              setSidebarOpen(true, { yielded: false, persist: false });
+            }
+          } else {
+            pendingAutoOpenRef.current = true;
+          }
+        }
       }
     },
-    [props.onEnabledChange],
+    [props.onEnabledChange, setSidebarOpen],
   );
 
   useEffect(() => {
@@ -127,13 +207,13 @@ export function OverlayApp(props: OverlayAppProps) {
         setPicking(false);
         setDraft(null);
         setActiveId(null);
-        setSidebarOpen(true);
+        setSidebarOpen(true, { yielded: false });
       },
     });
-  }, [props.onControllerReady, setEnabled]);
+  }, [props.onControllerReady, setEnabled, setSidebarOpen]);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
+  const showToast = useCallback((message: string, tone: ToastTone = 'info') => {
+    setToast({ id: Date.now(), message, tone });
     clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
@@ -142,11 +222,20 @@ export function OverlayApp(props: OverlayAppProps) {
 
   const refresh = useCallback(async () => {
     try {
-      setThreads(await storage.getComments(pageKey));
+      const list = await storage.getComments(pageKey);
+      threadsLoadedRef.current = true;
+      threadsCountRef.current = list.length;
+      setThreads(list);
+      if (pendingAutoOpenRef.current) {
+        pendingAutoOpenRef.current = false;
+        if (enabledRef.current && list.length > 0 && sidebarPrefRef.current === undefined) {
+          setSidebarOpen(true, { yielded: false, persist: false });
+        }
+      }
     } catch (err) {
-      console.error('[Marklet] failed to load comments', err);
+      console.error('[Marklet]', err);
     }
-  }, [storage, pageKey]);
+  }, [storage, pageKey, setSidebarOpen]);
 
   useEffect(() => {
     setActiveId(null);
@@ -157,6 +246,61 @@ export function OverlayApp(props: OverlayAppProps) {
     );
     return () => unsub?.();
   }, [storage, pageKey, refresh]);
+
+  const pageMeta = useMemo(() => {
+    try {
+      const u = new URL(pageUrl);
+      if (u.protocol === 'http:' || u.protocol === 'https:') {
+        return { origin: u.origin, host: u.host, path: u.pathname || '/' };
+      }
+      if (u.protocol === 'file:') {
+        const name = decodeURI(u.pathname).split('/').pop() || pageKey;
+        return { origin: null as string | null, host: null as string | null, path: name };
+      }
+    } catch {
+      /* fallback */
+    }
+    return { origin: null as string | null, host: null as string | null, path: pageKey };
+  }, [pageUrl, pageKey]);
+
+  useEffect(() => {
+    if (!pageMeta.origin || !storage.listSitePages) {
+      setOtherSitePages([]);
+      return;
+    }
+    let cancelled = false;
+    storage
+      .listSitePages(pageMeta.origin)
+      .then((pages) => {
+        if (!cancelled) {
+          setOtherSitePages(pages.filter((p) => p.pageKey !== pageKey && p.totalCount > 0));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOtherSitePages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [storage, pageMeta.origin, pageKey, threads, sidebarOpen]);
+
+  const navigateToSitePage = useCallback(
+    (targetUrl: string) => {
+      try {
+        const parsed = new URL(targetUrl);
+        if (pageMeta.origin && parsed.origin === pageMeta.origin) {
+          if (props.onNavigatePage) {
+            props.onNavigatePage(parsed.href);
+          } else {
+            window.location.assign(parsed.href);
+          }
+        }
+      } catch {
+        /* ignore invalid URL */
+      }
+    },
+    [pageMeta.origin, props.onNavigatePage],
+  );
 
   useEffect(() => {
     auth.getCurrentUser().then(setUser);
@@ -279,6 +423,15 @@ export function OverlayApp(props: OverlayAppProps) {
         setUserMenuOpen(false);
         setActiveId(null);
         setPicking((p) => !p);
+      } else if (e.code === 'KeyS' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        const next = !sidebarOpenRef.current;
+        setSidebarOpen(next, { yielded: false });
+        if (next) {
+          setPicking(false);
+          setDraft(null);
+          setUserMenuOpen(false);
+        }
       } else if (e.key === 'Escape') {
         if (draft) {
           setDraft(null);
@@ -287,12 +440,13 @@ export function OverlayApp(props: OverlayAppProps) {
         } else {
           setActiveId(null);
           setUserMenuOpen(false);
+          restoreYieldedSidebar();
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [enabled, setEnabled, draft, picking]);
+  }, [enabled, setEnabled, draft, picking, setSidebarOpen, restoreYieldedSidebar]);
 
   useEffect(() => {
     if (!activeId && !userMenuOpen) return;
@@ -300,10 +454,11 @@ export function OverlayApp(props: OverlayAppProps) {
       if (e.composedPath().includes(hostElement)) return;
       setActiveId(null);
       setUserMenuOpen(false);
+      restoreYieldedSidebar();
     };
     window.addEventListener('mousedown', onDown, true);
     return () => window.removeEventListener('mousedown', onDown, true);
-  }, [activeId, userMenuOpen, hostElement]);
+  }, [activeId, userMenuOpen, hostElement, restoreYieldedSidebar]);
 
   /* ---------------- actions ---------------- */
 
@@ -313,7 +468,7 @@ export function OverlayApp(props: OverlayAppProps) {
       await refresh();
     } catch (err) {
       console.error('[Marklet]', err);
-      showToast(errMsg);
+      showToast(errMsg, 'error');
     }
   };
 
@@ -350,14 +505,16 @@ export function OverlayApp(props: OverlayAppProps) {
     run(async () => {
       const next = t.status === 'open';
       await storage.resolveThread(t.id, user!, next);
-      showToast(next ? 'Resolved' : 'Reopened');
+      showToast(next ? 'Marked resolved' : 'Reopened', next ? 'success' : 'info');
     }, 'Failed to update status');
 
   const remove = (t: CommentThread) => {
     if (!storage.deleteThread) return;
-    if (!window.confirm(`Delete comment #${t.pinNumber}? This cannot be undone.`)) return;
     setActiveId(null);
-    run(() => storage.deleteThread!(t.id), 'Failed to delete comment');
+    run(async () => {
+      await storage.deleteThread!(t.id);
+      showToast(`Deleted #${t.pinNumber}`, 'info');
+    }, 'Failed to delete comment');
   };
 
   const openOverlayAndLocate = (t: CommentThread) => {
@@ -389,11 +546,12 @@ export function OverlayApp(props: OverlayAppProps) {
 
   const focusThread = (t: CommentThread) => {
     const r = resolved.get(t.id);
-    setSidebarOpen(false);
+    const el = r?.element;
+    const fallbackRight = !el ? t.anchor.boundingBox.pageX + t.anchor.boundingBox.width - window.scrollX : undefined;
+    syncSidebarForTarget(el, fallbackRight);
     setUserMenuOpen(false);
     setActiveId(t.id);
     setDraft(null);
-    const el = r?.element;
     if (el && isRendered(el)) {
       const rect = el.getBoundingClientRect();
       // If an open modal/drawer is covering the target (and doesn't contain it), dismiss it first
@@ -428,14 +586,6 @@ export function OverlayApp(props: OverlayAppProps) {
     if (next) focusThread(next);
   };
 
-  const openPanelFromCard = () => {
-    if (activeThread) setSidebarTab(activeThread.status);
-    setActiveId(null);
-    setDraft(null);
-    setPicking(false);
-    setSidebarOpen(true);
-  };
-
   const buildBrief = () => {
     const hasOpen = threads.some((t) => t.status === 'open');
     return buildAiIterationMarkdown(threads, {
@@ -452,7 +602,7 @@ export function OverlayApp(props: OverlayAppProps) {
     const count = threads.filter((t) => t.status === 'open').length || threads.length;
     try {
       await navigator.clipboard.writeText(md);
-      showToast(`Copied AI brief (${count} ${count === 1 ? 'comment' : 'comments'})`);
+      showToast(`Copied AI brief (${count} ${count === 1 ? 'comment' : 'comments'})`, 'success');
     } catch {
       // Fallback for restricted clipboard contexts (e.g. file:// without focus)
       const ta = document.createElement('textarea');
@@ -462,7 +612,7 @@ export function OverlayApp(props: OverlayAppProps) {
       ta.select();
       document.execCommand('copy');
       ta.remove();
-      showToast(`Copied AI brief (${count} ${count === 1 ? 'comment' : 'comments'})`);
+      showToast(`Copied AI brief (${count} ${count === 1 ? 'comment' : 'comments'})`, 'success');
     }
   };
 
@@ -481,7 +631,7 @@ export function OverlayApp(props: OverlayAppProps) {
     a.download = `marklet-brief-${new Date().toISOString().slice(0, 10)}.zip`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Design brief exported');
+    showToast('Design brief exported', 'success');
   };
 
   /* ---------------- derived layout ---------------- */
@@ -551,9 +701,18 @@ export function OverlayApp(props: OverlayAppProps) {
                 onClick={() => {
                   setPicking(false);
                   setDraft(null);
-                  setSidebarOpen(false);
                   setUserMenuOpen(false);
-                  setActiveId(activeId === t.id ? null : t.id);
+                  if (activeId === t.id) {
+                    setActiveId(null);
+                    restoreYieldedSidebar();
+                  } else {
+                    const r = resolved.get(t.id);
+                    const fallbackRight = !r?.element
+                      ? t.anchor.boundingBox.pageX + t.anchor.boundingBox.width - window.scrollX
+                      : undefined;
+                    syncSidebarForTarget(r?.element, fallbackRight);
+                    setActiveId(t.id);
+                  }
                 }}
               >
                 <span class="pp-pin-inner">
@@ -593,8 +752,10 @@ export function OverlayApp(props: OverlayAppProps) {
               hiddenReason={hiddenReason}
               canReopen={canReopen}
               style={outOfView ? undefined : placeCard(activeGeo, CARD_W, 340, rightLimit)}
-              onClose={() => setActiveId(null)}
-              onOpenSidebar={openPanelFromCard}
+              onClose={() => {
+                setActiveId(null);
+                restoreYieldedSidebar();
+              }}
               onPrev={() => stepThread(-1)}
               onNext={() => stepThread(1)}
               onLocate={() => (canReopen ? openOverlayAndLocate(activeThread) : focusThread(activeThread))}
@@ -648,6 +809,11 @@ export function OverlayApp(props: OverlayAppProps) {
           tab={sidebarTab}
           onTabChange={setSidebarTab}
           onSelect={focusThread}
+          pagePath={pageMeta.path}
+          pageUrl={pageUrl}
+          siteHost={pageMeta.host}
+          otherSitePages={otherSitePages}
+          onNavigatePage={navigateToSitePage}
           onCopyBrief={copyAiBrief}
           onDownloadBrief={downloadAiBrief}
           onClose={() => setSidebarOpen(false)}
@@ -734,15 +900,14 @@ export function OverlayApp(props: OverlayAppProps) {
             <>
               <button
                 class={cx('pp-tool', sidebarOpen && 'is-soft-on')}
-                data-tip="All comments"
+                data-tip="All comments (S)"
                 aria-label="All comments"
                 aria-pressed={sidebarOpen}
                 onClick={() => {
                   const next = !sidebarOpen;
-                  setSidebarOpen(next);
+                  setSidebarOpen(next, { yielded: false });
                   if (next) {
                     setPicking(false);
-                    setActiveId(null);
                     setDraft(null);
                   }
                 }}
@@ -772,7 +937,20 @@ export function OverlayApp(props: OverlayAppProps) {
         </div>
       )}
 
-      {toast && <div class="pp-toast">{toast}</div>}
+      {toast && (
+        <div key={toast.id} class={cx('pp-toast', `is-${toast.tone}`)} role="status" aria-live="polite">
+          <span class="pp-toast-icon" aria-hidden="true">
+            {toast.tone === 'success' ? (
+              <IconCheck small />
+            ) : toast.tone === 'error' ? (
+              <IconAlert />
+            ) : (
+              <span class="pp-toast-dot" />
+            )}
+          </span>
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -802,7 +980,6 @@ interface ThreadCardProps {
   canReopen?: boolean;
   style?: JSX.CSSProperties;
   onClose?: () => void;
-  onOpenSidebar?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   onLocate?: () => void;
@@ -815,6 +992,42 @@ function ThreadCard(p: ThreadCardProps) {
   const { thread: t } = p;
   const orphan = !p.resolved?.element;
   const lowConfidence = !orphan && (p.resolved?.confidence ?? 1) < 0.6;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [resolvePop, setResolvePop] = useState(false);
+  const delTimer = useRef<number>();
+  const resolveTimer = useRef<number>();
+
+  useEffect(() => {
+    setConfirmDelete(false);
+    clearTimeout(delTimer.current);
+  }, [t.id]);
+
+  useEffect(
+    () => () => {
+      clearTimeout(delTimer.current);
+      clearTimeout(resolveTimer.current);
+    },
+    [],
+  );
+
+  const handleDeleteClick = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      clearTimeout(delTimer.current);
+      delTimer.current = window.setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    clearTimeout(delTimer.current);
+    setConfirmDelete(false);
+    p.onDelete?.();
+  };
+
+  const handleResolveClick = () => {
+    setResolvePop(true);
+    clearTimeout(resolveTimer.current);
+    resolveTimer.current = window.setTimeout(() => setResolvePop(false), 360);
+    p.onToggleResolve?.();
+  };
 
   if (p.mode === 'preview') {
     return (
@@ -834,17 +1047,7 @@ function ThreadCard(p: ThreadCardProps) {
   return (
     <div class={cx('pp-card', p.outOfView && 'is-centered')} style={p.style}>
       <div class="pp-card-head">
-        <button
-          class="pp-icon-btn"
-          title="All comments"
-          aria-label="All comments"
-          onClick={p.onOpenSidebar}
-        >
-          <IconSidebar />
-        </button>
-        <span class="pp-card-title" style={{ marginLeft: 2 }}>
-          #{t.pinNumber}
-        </span>
+        <span class="pp-card-title">#{t.pinNumber}</span>
         <span class={cx('pp-chip', t.status === 'resolved' ? 'is-resolved' : 'is-blue')}>
           {t.status === 'resolved' ? 'Resolved' : 'Open'}
         </span>
@@ -869,16 +1072,22 @@ function ThreadCard(p: ThreadCardProps) {
         </button>
         <span class="pp-head-divider" />
         <button
-          class={cx('pp-icon-btn', t.status === 'resolved' && 'is-resolved')}
+          class={cx('pp-icon-btn', t.status === 'resolved' && 'is-resolved', resolvePop && 'is-popping')}
           title={t.status === 'open' ? 'Resolve' : 'Reopen'}
           aria-label={t.status === 'open' ? 'Resolve' : 'Reopen'}
-          onClick={p.onToggleResolve}
+          onClick={handleResolveClick}
         >
           <IconCheckCircle />
         </button>
         {p.canDelete && (
-          <button class="pp-icon-btn is-danger" title="Delete" aria-label="Delete" onClick={p.onDelete}>
+          <button
+            class={cx('pp-del-btn', confirmDelete && 'is-confirming')}
+            title={confirmDelete ? 'Click again to delete' : 'Delete'}
+            aria-label={confirmDelete ? 'Confirm delete comment' : 'Delete'}
+            onClick={handleDeleteClick}
+          >
             <IconTrash />
+            {confirmDelete && <span class="pp-del-label">Delete?</span>}
           </button>
         )}
         <button class="pp-icon-btn" title="Close" aria-label="Close" onClick={p.onClose}>
@@ -1089,8 +1298,13 @@ interface SidebarProps {
   resolved: Map<string, ResolvedAnchor>;
   activeId: string | null;
   tab: 'open' | 'resolved';
+  pagePath: string;
+  pageUrl: string;
+  siteHost: string | null;
+  otherSitePages: SitePageSummary[];
   onTabChange: (tab: 'open' | 'resolved') => void;
   onSelect: (t: CommentThread) => void;
+  onNavigatePage: (url: string) => void;
   onCopyBrief: () => void;
   onDownloadBrief: () => void;
   onClose: () => void;
@@ -1098,23 +1312,42 @@ interface SidebarProps {
 
 function Sidebar(p: SidebarProps) {
   const { tab, onTabChange } = p;
+  const [exported, setExported] = useState(false);
+  const exportTimer = useRef<number>();
   const open = p.threads.filter((t) => t.status === 'open');
   const done = p.threads.filter((t) => t.status === 'resolved');
   const visible = tab === 'open' ? open : done;
   const hasThreads = p.threads.length > 0;
+
+  useEffect(() => () => clearTimeout(exportTimer.current), []);
+
+  const handleExportClick = () => {
+    p.onDownloadBrief();
+    setExported(true);
+    clearTimeout(exportTimer.current);
+    exportTimer.current = window.setTimeout(() => setExported(false), 1800);
+  };
 
   return (
     <aside class="pp-sidebar">
       <div class="pp-sidebar-head">
         <div class="pp-row">
           <span class="pp-sidebar-title">Comments</span>
-          <span class="pp-count">{p.threads.length}</span>
+          <span class="pp-count">
+            <span key={p.threads.length} class="pp-count-num">
+              {p.threads.length}
+            </span>
+          </span>
           <span class="pp-spacer" />
           <button class="pp-icon-btn" title="Close" aria-label="Close" onClick={p.onClose}>
             <IconClose />
           </button>
         </div>
-        <div class="pp-tabs" role="tablist" aria-label="Comment status filter">
+        <div class="pp-sidebar-sub" title={p.pageUrl}>
+          {p.pagePath}
+        </div>
+        <div class="pp-tabs" role="tablist" aria-label="Comment status filter" data-active={tab}>
+          <span class="pp-tabs-indicator" aria-hidden="true" />
           <button
             role="tab"
             aria-selected={tab === 'open'}
@@ -1122,7 +1355,11 @@ function Sidebar(p: SidebarProps) {
             onClick={() => onTabChange('open')}
           >
             <span>Open</span>
-            <span class="pp-tab-count">{open.length}</span>
+            <span class="pp-tab-count">
+              <span key={open.length} class="pp-count-num">
+                {open.length}
+              </span>
+            </span>
           </button>
           <button
             role="tab"
@@ -1131,7 +1368,11 @@ function Sidebar(p: SidebarProps) {
             onClick={() => onTabChange('resolved')}
           >
             <span>Resolved</span>
-            <span class="pp-tab-count">{done.length}</span>
+            <span class="pp-tab-count">
+              <span key={done.length} class="pp-count-num">
+                {done.length}
+              </span>
+            </span>
           </button>
         </div>
       </div>
@@ -1182,17 +1423,60 @@ function Sidebar(p: SidebarProps) {
             );
           })
         )}
+
+        {p.otherSitePages.length > 0 && (
+          <div class="pp-site-pages">
+            <div class="pp-site-pages-head">
+              <span>Other pages{p.siteHost ? ` on ${p.siteHost}` : ''}</span>
+              <span class="pp-site-pages-total">
+                {p.otherSitePages.reduce((sum, pg) => sum + pg.totalCount, 0)}
+              </span>
+            </div>
+            <div class="pp-site-pages-list">
+              {p.otherSitePages.map((pg) => {
+                let pathLabel = pg.pageKey;
+                try {
+                  const u = new URL(pg.url);
+                  pathLabel = u.pathname || '/';
+                } catch {
+                  /* fallback */
+                }
+                return (
+                  <button
+                    key={pg.pageKey}
+                    class="pp-site-page"
+                    title={`Go to ${pg.url}`}
+                    onClick={() => p.onNavigatePage(pg.url)}
+                  >
+                    <span class="pp-site-page-main">
+                      <span class="pp-site-page-path">{pathLabel}</span>
+                      {pg.title && pg.title !== pg.pageKey && <span class="pp-site-page-title">{pg.title}</span>}
+                    </span>
+                    <span class={cx('pp-site-page-pill', pg.openCount > 0 ? 'is-open' : 'is-done')}>
+                      {pg.openCount > 0 ? `${pg.openCount} open` : `${pg.totalCount} ✓`}
+                    </span>
+                    <span class="pp-site-page-arrow" aria-hidden="true">
+                      <IconChevronRight />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div class="pp-sidebar-foot">
         <button
-          class="pp-brief-btn"
+          class={cx('pp-brief-btn', exported && 'is-exported')}
           title="Export Design Brief (.zip with Markdown & element screenshots)"
           disabled={!hasThreads}
-          onClick={p.onDownloadBrief}
+          onClick={handleExportClick}
         >
-          <IconDownload />
-          <span>Export Design Brief</span>
+          <span key={exported ? 'done' : 'idle'} class="pp-brief-btn-content">
+            {exported ? <IconCheck small /> : <IconDownload />}
+            <span>{exported ? 'Exported .zip' : 'Export Design Brief'}</span>
+          </span>
         </button>
         <p class="pp-brief-note">Downloads a .zip ready for AI coding tools</p>
       </div>
@@ -1420,6 +1704,12 @@ const IconDownload = () => (
     <path d="M8 2.75v7.5M5 7.5l3 3 3-3M3 12.75h10" />
   </Svg>
 );
+const IconAlert = () => (
+  <Svg size={14}>
+    <circle cx="8" cy="8" r="5.75" />
+    <path d="M8 5.25v3.25M8 10.75h.01" />
+  </Svg>
+);
 
 /* ================================================================== */
 /* Utils                                                              */
@@ -1500,30 +1790,64 @@ function tryDismissBlockingOverlay(targetEl: Element, rect: DOMRect, hostElement
 }
 
 /**
- * Hit-test whether `el` is completely covered by another layer (e.g. a modal backdrop,
- * drawer, or sticky header). Ignores our own Shadow DOM host.
+ * Check whether `node` belongs to a blocking modal, dialog, drawer, or full-viewport
+ * backdrop that does not contain `targetEl`. Sticky headers, navbars, and sidebars
+ * return `false` so elements scrolled behind them are treated as off-screen instead.
  */
-function isOccluded(el: Element, rect: DOMRect, hostElement: Element): boolean {
-  if (typeof document.elementsFromPoint !== 'function') return false;
+function isBlockingOverlayElement(node: Element, targetEl: Element): boolean {
+  const semantic = node.closest(
+    'dialog[open], [role="dialog"], [aria-modal="true"], .modal-backdrop, .drawer-backdrop, .modal, .drawer',
+  );
+  if (semantic && !semantic.contains(targetEl)) return true;
+
+  let cur: Element | null = node;
+  for (let depth = 0; cur && cur !== document.body && cur !== document.documentElement && depth < 8; depth++) {
+    if (cur.contains(targetEl)) return false;
+    const pos = window.getComputedStyle(cur).position;
+    if (pos === 'fixed') {
+      const r = cur.getBoundingClientRect();
+      if (r.width >= window.innerWidth * 0.6 && r.height >= window.innerHeight * 0.6) {
+        return true;
+      }
+    }
+    cur = cur.parentElement;
+  }
+  return false;
+}
+
+/**
+ * Hit-test whether `el` is visible, scrolled behind a non-overlay chrome bar (e.g. sticky
+ * header), or genuinely covered by an open modal/drawer overlay. Ignores our Shadow DOM host.
+ */
+function classifyOcclusion(el: Element, rect: DOMRect, hostElement: Element): 'visible' | 'scrolled' | 'occluded' {
+  if (typeof document.elementsFromPoint !== 'function') return 'visible';
   const minX = Math.max(0, rect.left + 2);
   const maxX = Math.min(window.innerWidth - 1, rect.right - 2);
   const minY = Math.max(0, rect.top + 2);
   const maxY = Math.min(window.innerHeight - 1, rect.bottom - 2);
-  if (minX > maxX || minY > maxY) return true;
+  if (minX > maxX || minY > maxY) return 'scrolled';
 
   const points: Array<[number, number]> = [
     [(minX + maxX) / 2, (minY + maxY) / 2],
     [maxX, minY],
     [minX, minY],
+    [maxX, maxY],
+    [minX, maxY],
   ];
 
+  let hitOverlay = false;
   for (const [px, py] of points) {
     const stack = document.elementsFromPoint(px, py);
     const top = stack.find((node) => node !== hostElement && !hostElement.contains(node));
     if (!top) continue;
-    if (top === el || el.contains(top)) return false;
+    if (top === el || el.contains(top)) return 'visible';
+    if (isBlockingOverlayElement(top, el)) hitOverlay = true;
   }
-  return true;
+  return hitOverlay ? 'occluded' : 'scrolled';
+}
+
+function isOccluded(el: Element, rect: DOMRect, hostElement: Element): boolean {
+  return classifyOcclusion(el, rect, hostElement) === 'occluded';
 }
 
 function pinGeometry(t: CommentThread, r: ResolvedAnchor | undefined, rightLimit: number, hostElement: Element): PinGeo {
@@ -1548,8 +1872,9 @@ function pinGeometry(t: CommentThread, r: ResolvedAnchor | undefined, rightLimit
     if (!isRectInView(rect, rightLimit) || isClippedByAncestor(el, rect)) {
       return hiddenGeo(false, 'scrolled');
     }
-    if (isOccluded(el, rect, hostElement)) {
-      return hiddenGeo(false, 'occluded');
+    const occlusion = classifyOcclusion(el, rect, hostElement);
+    if (occlusion !== 'visible') {
+      return hiddenGeo(false, occlusion);
     }
     const baseRight = rect.right - 6;
     const flipped = baseRight + 34 > rightLimit;

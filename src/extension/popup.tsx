@@ -5,14 +5,13 @@ import {
   deletePageComments,
   exportPageComments,
   importPageComments,
-  isSafeHttpOrFileUrl,
   listRecentPages,
   resolvePageKeyFromUrl,
   resolveSiteKey,
   type PageSummary,
 } from './chromeStorageAdapter';
 
-const FEEDBACK_URL = 'https://x.com/shawnzpdeng';
+const FEEDBACK_URL = 'https://github.com/iamshawndeng/marklet/issues';
 
 interface TabInfo {
   id: number;
@@ -182,38 +181,18 @@ function PopupApp() {
     flashStatus('All local data cleared.');
   };
 
-  const handleDeleteRecent = async (pageKey: string) => {
-    await deletePageComments(pageKey);
-    await refresh();
-    flashStatus('Removed page comments.');
-  };
-
-  const openRecent = async (item: PageSummary) => {
-    if (!isSafeHttpOrFileUrl(item.url)) {
-      flashStatus('Blocked unsafe URL.');
-      return;
-    }
-    await chrome.tabs.create({ url: item.url });
-    window.close();
-  };
-
   const openExtensionSettings = async () => {
     await chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
     window.close();
   };
 
   const handleFeedback = async () => {
-    if (!FEEDBACK_URL) {
-      flashStatus('Feedback link coming soon — set FEEDBACK_URL before release.');
-      return;
-    }
     await chrome.tabs.create({ url: FEEDBACK_URL });
     window.close();
   };
 
   const currentSummary = tab ? recent.find((p) => p.pageKey === tab.pageKey) : undefined;
   const resolvedCount = currentSummary ? Math.max(0, currentSummary.totalCount - currentSummary.openCount) : 0;
-  const otherPages = recent.filter((p) => p.pageKey !== tab?.pageKey).slice(0, 5);
   const needsFilePermission = Boolean(tab && tab.siteKey === 'file://' && !fileAccessAllowed);
 
   return (
@@ -276,7 +255,11 @@ function PopupApp() {
             >
               Clear this page
             </button>
-            <button class="menu-item danger" disabled={recent.length === 0} onClick={handleClearAll}>
+            <button
+              class={`menu-item danger${confirmClearAll ? ' is-confirming' : ''}`}
+              disabled={recent.length === 0}
+              onClick={handleClearAll}
+            >
               {confirmClearAll ? 'Confirm clear all?' : 'Clear all data'}
             </button>
           </div>
@@ -341,35 +324,6 @@ function PopupApp() {
           </>
         ) : null}
       </section>
-
-      {otherPages.length > 0 && (
-        <section class="sec">
-          <div class="sec-label">Recent pages</div>
-          <div class="recent-list">
-            {otherPages.map((item) => (
-              <div key={item.pageKey} class="recent-row">
-                <button class="recent-item" onClick={() => openRecent(item)}>
-                  <div class="recent-main">
-                    <div class="recent-title">{item.title}</div>
-                    <div class="recent-sub">{item.pageKey}</div>
-                  </div>
-                  <span class={`pill${item.openCount > 0 ? ' open' : ''}`}>
-                    {item.openCount > 0 ? item.openCount : `${item.totalCount} ✓`}
-                  </span>
-                </button>
-                <button
-                  class="del-btn"
-                  title="Delete comments"
-                  aria-label={`Delete comments for ${item.title}`}
-                  onClick={() => handleDeleteRecent(item.pageKey)}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {status && <div class="status">{status}</div>}
 

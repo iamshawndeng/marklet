@@ -131,6 +131,12 @@
         border-radius: 12px;
         box-shadow: var(--shadow-menu);
         z-index: 20;
+        transform-origin: top right;
+        animation: pop-in 180ms cubic-bezier(0.34, 1.4, 0.64, 1);
+      }
+      @keyframes pop-in {
+        from { opacity: 0; transform: translateY(-4px) scale(0.95); }
+        to { opacity: 1; transform: none; }
       }
       .menu-sep {
         height: 1px;
@@ -146,11 +152,22 @@
         font-size: 12.5px;
         color: var(--text);
         text-align: left;
+        transition: background 120ms ease, color 120ms ease, transform 140ms cubic-bezier(0.34, 1.4, 0.64, 1);
       }
       .menu-item:hover:not(:disabled) { background: var(--bg-2); }
+      .menu-item:active:not(:disabled) { transform: scale(0.98); }
       .menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
       .menu-item.danger { color: var(--red); }
       .menu-item.danger:hover:not(:disabled) { background: var(--red-hover-bg); }
+      .menu-item.danger.is-confirming {
+        background: var(--red);
+        color: #ffffff;
+        font-weight: 600;
+      }
+      .menu-item.danger.is-confirming:hover:not(:disabled) {
+        background: #ad392b;
+        color: #ffffff;
+      }
 
       .sec { padding: 14px 16px; }
       .sec + .sec { border-top: 1px solid var(--border-sub); }
@@ -193,6 +210,13 @@
         height: 5px;
         border-radius: 50%;
         background: var(--green);
+        box-shadow: 0 0 0 0 rgba(85, 113, 68, 0.45);
+        animation: live-pulse 2.2s ease-out infinite;
+      }
+      @keyframes live-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(85, 113, 68, 0.45); }
+        65% { box-shadow: 0 0 0 5px rgba(85, 113, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(85, 113, 68, 0); }
       }
       .page-host {
         font-size: 11.5px;
@@ -239,9 +263,10 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        transition: background 120ms ease;
+        transition: background 120ms ease, transform 150ms cubic-bezier(0.34, 1.4, 0.64, 1);
       }
       .primary-btn:hover:not(:disabled) { background: var(--brand-hover); }
+      .primary-btn:active:not(:disabled) { transform: scale(0.975); }
       .primary-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
       .stop-btn {
@@ -259,9 +284,10 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        transition: background 120ms ease, border-color 120ms ease;
+        transition: background 120ms ease, border-color 120ms ease, transform 150ms cubic-bezier(0.34, 1.4, 0.64, 1);
       }
       .stop-btn:hover:not(:disabled) { background: var(--bg-hover); border-color: #d6d3cb; }
+      .stop-btn:active:not(:disabled) { transform: scale(0.975); }
       .stop-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
       .note {
@@ -292,70 +318,6 @@
         text-underline-offset: 2px;
       }
 
-      .recent-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
-      .recent-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        transition: background 100ms ease, border-color 100ms ease;
-      }
-      .recent-row:hover { background: var(--bg-2); border-color: #d6d3cb; }
-      .recent-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        min-width: 0;
-        padding: 8px 6px 8px 10px;
-        text-align: left;
-      }
-      .recent-main { flex: 1; min-width: 0; }
-      .recent-title {
-        font-size: 12.5px;
-        font-weight: 500;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .recent-sub {
-        font-size: 11px;
-        color: var(--text-3);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .pill {
-        flex: none;
-        min-width: 22px;
-        height: 20px;
-        padding: 0 7px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 600;
-        display: grid;
-        place-items: center;
-        background: var(--bg-2);
-        color: var(--text-2);
-      }
-      .pill.open { background: var(--brand-tint); color: var(--brand-hover); }
-      .del-btn {
-        flex: none;
-        width: 24px;
-        height: 24px;
-        margin-right: 6px;
-        border-radius: 6px;
-        display: grid;
-        place-items: center;
-        color: var(--text-3);
-        opacity: 0;
-        transition: opacity 100ms ease, background 100ms ease, color 100ms ease;
-      }
-      .recent-row:hover .del-btn,
-      .del-btn:focus-visible { opacity: 1; }
-      .del-btn:hover { background: var(--bg-hover); color: var(--red); }
-
       .status {
         margin: 0 16px 10px;
         padding: 7px 10px;
@@ -364,6 +326,7 @@
         font-weight: 500;
         color: var(--brand-hover);
         background: var(--brand-tint);
+        animation: pop-in 200ms cubic-bezier(0.34, 1.4, 0.64, 1);
       }
 
       .foot {
@@ -384,6 +347,13 @@
       }
       .status-dot.active {
         background: var(--green);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>

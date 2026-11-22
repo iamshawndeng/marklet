@@ -144,6 +144,15 @@ export interface NewCommentInput {
 /* Storage                                                            */
 /* ------------------------------------------------------------------ */
 
+export interface SitePageSummary {
+  pageKey: string;
+  url: string;
+  title: string;
+  openCount: number;
+  totalCount: number;
+  updatedAt: string;
+}
+
 export interface StorageAdapter {
   /** All threads for a page, ordered by pinNumber. */
   getComments(pageKey: string): Promise<CommentThread[]>;
@@ -156,6 +165,8 @@ export interface StorageAdapter {
 
   /* ---- optional capabilities ---- */
   deleteThread?(threadId: string): Promise<void>;
+  /** List pages on the same web origin (`http:`/`https:`) that have comments. */
+  listSitePages?(origin: string): Promise<SitePageSummary[]>;
   /** Push-style updates (other tabs, realtime backends). Returns an unsubscribe function. */
   subscribe?(pageKey: string, listener: (threads: CommentThread[]) => void): () => void;
 }

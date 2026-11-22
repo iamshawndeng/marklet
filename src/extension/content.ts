@@ -15,6 +15,7 @@ import { createChromeAuthAdapter, createChromeStorageAdapter } from './chromeSto
 
 const HOST_ID = 'marklet-host';
 const ENABLED_KEY = 'marklet:v1:enabled';
+const SIDEBAR_KEY = 'marklet:v1:sidebarOpen';
 const PAGE_KEY_STRATEGY: PageKeyStrategy = 'pathname';
 
 function hasChromeStorage(): boolean {
@@ -32,6 +33,25 @@ function readEnabled(): boolean {
 function writeEnabled(on: boolean): void {
   try {
     localStorage.setItem(ENABLED_KEY, on ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+}
+
+function readSidebarOpen(): boolean | undefined {
+  try {
+    const val = sessionStorage.getItem(SIDEBAR_KEY);
+    if (val === '1') return true;
+    if (val === '0') return false;
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSidebarOpen(open: boolean): void {
+  try {
+    sessionStorage.setItem(SIDEBAR_KEY, open ? '1' : '0');
   } catch {
     /* ignore */
   }
@@ -95,7 +115,14 @@ function bootstrap(): void {
   const storage = inExtension ? createChromeStorageAdapter() : createLocalStorageAdapter();
   const auth = inExtension ? createChromeAuthAdapter() : createLocalAuthAdapter();
   const defaultEnabled = readEnabled();
+  const defaultSidebarOpen = readSidebarOpen();
   let controller: OverlayController | null = null;
+  const pendingActions: Array<(ctrl: OverlayController) => void> = [];
+
+  const runController = (fn: (ctrl: OverlayController) => void) => {
+    if (controller) fn(controller);
+    else pendingActions.push(fn);
+  };
 
   const captureSnapshot = inExtension
     ? async (rect: DOMRect): Promise<string | undefined> => {
@@ -172,6 +199,26 @@ function bootstrap(): void {
     badgeUnsub = storage.subscribe?.(pageKey, pushCount) ?? null;
   };
 
+  const handleEnabledChange = (next: boolean) => {
+    writeEnabled(next);
+    if (inExtension && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'MARKLET_SET_TAB_ACTIVE', active: next }).catch(() => {});
+    }
+  };
+
+  const handleNavigatePage = (url: string) => {
+    if (inExtension && chrome.runtime?.sendMessage) {
+      chrome.runtime
+        .sendMessage({ type: 'MARKLET_NAVIGATE_AND_RESUME', url })
+        .then((res) => {
+          if (!(res as { ok?: boolean } | undefined)?.ok) window.location.assign(url);
+        })
+        .catch(() => window.location.assign(url));
+    } else {
+      window.location.assign(url);
+    }
+  };
+
   const renderApp = () => {
     currentHref = location.href;
     const pageKey = resolvePageKey(location, PAGE_KEY_STRATEGY);
@@ -183,11 +230,17 @@ function bootstrap(): void {
         pageUrl: location.href,
         hostElement: host,
         defaultEnabled,
+        defaultSidebarOpen,
         hideFabWhenDisabled: inExtension,
-        onEnabledChange: writeEnabled,
+        onEnabledChange: handleEnabledChange,
+        onSidebarOpenChange: writeSidebarOpen,
+        onNavigatePage: handleNavigatePage,
         captureSnapshot,
         onControllerReady: (ctrl) => {
           controller = ctrl;
+          while (pendingActions.length > 0) {
+            pendingActions.shift()?.(ctrl);
+          }
         },
       }),
       container,
@@ -205,17 +258,19 @@ function bootstrap(): void {
         return false;
       }
       if (msg.type === 'MARKLET_SET_ENABLED') {
-        controller?.setEnabled(Boolean(msg.enabled));
+        const next = Boolean(msg.enabled);
+        runController((ctrl) => ctrl.setEnabled(next));
         sendResponse({ ok: true });
         return false;
       }
       if (msg.type === 'MARKLET_START_PICKING') {
-        controller?.startPicking();
+        runController((ctrl) => ctrl.startPicking());
         sendResponse({ ok: true });
         return false;
       }
       if (msg.type === 'MARKLET_OPEN_SIDEBAR') {
-        controller?.openSidebar();
+        writeSidebarOpen(true);
+        runController((ctrl) => ctrl.openSidebar());
         sendResponse({ ok: true });
         return false;
       }

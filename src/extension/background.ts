@@ -12,6 +12,11 @@ const BADGE_BG = '#C96442';
 
 type ActivateAction = 'enable' | 'disable' | 'pick' | 'sidebar';
 
+/** Tabs where the user explicitly started a review session (cleared on disable, tab close, or cross-origin nav). */
+const activeReviewTabs = new Set<number>();
+/** Next activation mode to apply once a same-origin navigation finishes loading. */
+const pendingResumeAction = new Map<number, ActivateAction>();
+
 async function injectContentScript(tabId: number): Promise<void> {
   await chrome.scripting.executeScript({
     target: { tabId },
@@ -32,6 +37,10 @@ async function setBadgeCount(tabId: number, count: number): Promise<void> {
 }
 
 async function activateOnTab(tabId: number, action: ActivateAction): Promise<boolean> {
+  if (action === 'disable') {
+    activeReviewTabs.delete(tabId);
+    pendingResumeAction.delete(tabId);
+  }
   try {
     await injectContentScript(tabId);
     if (action === 'pick') {
@@ -44,8 +53,13 @@ async function activateOnTab(tabId: number, action: ActivateAction): Promise<boo
         enabled: action === 'enable',
       });
     }
+    if (action !== 'disable') {
+      activeReviewTabs.add(tabId);
+    }
     return true;
   } catch (err) {
+    activeReviewTabs.delete(tabId);
+    pendingResumeAction.delete(tabId);
     console.warn('[Marklet] unable to activate on tab', tabId, err);
     return false;
   }
@@ -81,5 +95,53 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
 
+  if (msg.type === 'MARKLET_SET_TAB_ACTIVE' && sender.tab?.id !== undefined) {
+    if (msg.active) {
+      activeReviewTabs.add(sender.tab.id);
+    } else {
+      activeReviewTabs.delete(sender.tab.id);
+      pendingResumeAction.delete(sender.tab.id);
+    }
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (msg.type === 'MARKLET_NAVIGATE_AND_RESUME' && sender.tab?.id !== undefined && typeof msg.url === 'string') {
+    const tabId = sender.tab.id;
+    try {
+      const parsed = new URL(msg.url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        sendResponse({ ok: false });
+        return false;
+      }
+      activeReviewTabs.add(tabId);
+      pendingResumeAction.set(tabId, 'sidebar');
+      chrome.tabs
+        .update(tabId, { url: parsed.href })
+        .then(() => sendResponse({ ok: true }))
+        .catch(() => {
+          pendingResumeAction.delete(tabId);
+          sendResponse({ ok: false });
+        });
+      return true;
+    } catch {
+      sendResponse({ ok: false });
+      return false;
+    }
+  }
+
   return false;
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'complete') return;
+  if (!activeReviewTabs.has(tabId)) return;
+  const action = pendingResumeAction.get(tabId) ?? 'enable';
+  pendingResumeAction.delete(tabId);
+  void activateOnTab(tabId, action);
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  activeReviewTabs.delete(tabId);
+  pendingResumeAction.delete(tabId);
 });

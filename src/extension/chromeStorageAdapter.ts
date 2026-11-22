@@ -9,6 +9,7 @@ import type {
   CommentReply,
   CommentThread,
   NewCommentInput,
+  SitePageSummary,
   StorageAdapter,
   UserProfile,
 } from '../adapters/types';
@@ -22,14 +23,7 @@ export const USER_KEY = `${STORAGE_NS}:user`;
 
 export const threadsKeyFor = (pageKey: string) => `${STORAGE_NS}:threads:${pageKey}`;
 
-export interface PageSummary {
-  pageKey: string;
-  url: string;
-  title: string;
-  openCount: number;
-  totalCount: number;
-  updatedAt: string;
-}
+export type PageSummary = SitePageSummary;
 
 const PALETTE = ['#d97757', '#141413', '#6a9bcc', '#788c5d', '#b46927', '#8c6d8c', '#4d7c74', '#9a5b44'];
 
@@ -207,6 +201,15 @@ export function createChromeStorageAdapter(): StorageAdapter {
         [INDEX_KEY]: index,
       });
       await updatePageSummary(pageKey, next);
+    },
+
+    async listSitePages(origin: string) {
+      if (!/^https?:\/\//i.test(origin)) return [];
+      const pages = await getRaw<Record<string, PageSummary>>(PAGES_KEY, {});
+      return Object.values(pages)
+        .filter((p) => p.totalCount > 0 && resolveSiteKey(p.url) === origin)
+        .sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1))
+        .map((p) => ({ ...p }));
     },
 
     subscribe(pageKey, listener) {
