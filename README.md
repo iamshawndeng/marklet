@@ -4,6 +4,9 @@ Leave element-level comments on any webpage or local HTML prototype for async de
 
 Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript + Vite + Preact) with an isolated Shadow DOM overlay, automatic Light & Dark mode, and a strict least-privilege security model.
 
+[![Install on Microsoft Edge Add-ons](https://img.shields.io/badge/Microsoft_Edge-Install_Marklet-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl)
+![Chrome Web Store — In Review](https://img.shields.io/badge/Chrome_Web_Store-In_Review-5F6368?style=for-the-badge&logo=googlechrome&logoColor=white)
+
 ![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
 
 <p align="center">
@@ -43,6 +46,11 @@ src/
 ```
 
 Dependency boundaries are enforced at build time by `scripts/check-layers.mjs` (`core` and `adapters` cannot import `chrome.*`), making it easy to plug in an enterprise REST/WebSocket backend, SSO identity provider, or VS Code Webview shell later.
+
+## Install
+
+- **Microsoft Edge**: [Install from Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl)
+- **Google Chrome**: Chrome Web Store submission in review (or load unpacked from `dist/` below)
 
 ## Development
 
