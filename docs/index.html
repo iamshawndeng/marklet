@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marklet — Async design reviews on any webpage</title>
+    <meta
+      name="description"
+      content="Leave Figma-style visual comments on any webpage or local prototype, share feedback as a link, and export one brief for AI."
+    />
+    <meta property="og:title" content="Marklet — Async design reviews on any webpage" />
+    <meta
+      property="og:description"
+      content="Leave Figma-style visual comments on any webpage or local prototype, share feedback as a link, and export one brief for AI."
+    />
+    <meta property="og:image" content="./images/screenshot-4-async.png" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='30' fill='%23F0EEE6'/%3E%3Cpath d='M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z' fill='%23141413'/%3E%3Cpath d='M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z' fill='%23C96442'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #faf9f6;
+        --surface: #ffffff;
+        --surface-2: #f3f2ed;
+        --canvas: #eceae2;
+        --border: rgba(20, 20, 19, 0.09);
+        --border-strong: rgba(20, 20, 19, 0.16);
+        --text: #141413;
+        --text-2: #575651;
+        --text-3: #87867f;
+
+        /* Real Marklet overlay tokens (from src/core/overlay.css) */
+        --pp-blue: #c96442;
+        --pp-blue-hover: #b45333;
+        --pp-blue-tint: rgba(201, 100, 66, 0.11);
+        --pp-blue-tint-strong: rgba(201, 100, 66, 0.18);
+        --pp-green: #557144;
+        --pp-red: #c44536;
+        --pp-bg: #ffffff;
+        --pp-bg-secondary: #f6f6f4;
+        --pp-bg-hover: #eeede9;
+        --pp-border: #e6e5e0;
+        --pp-border-subtle: #f0efeb;
+        --pp-text: #141413;
+        --pp-text-2: #5e5d59;
+        --pp-text-3: #87867f;
+        --pp-icon: #3d3d3a;
+        --pp-icon-hover: #141413;
+        --pp-shadow: 0 12px 32px rgba(20, 20, 19, 0.14), 0 2px 6px rgba(20, 20, 19, 0.06), 0 0 0 1px rgba(20, 20, 19, 0.08);
+        --pp-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+        --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141413;
+          --surface: #1b1b19;
+          --surface-2: #242320;
+          --canvas: #1d1c19;
+          --border: rgba(245, 244, 239, 0.09);
+          --border-strong: rgba(245, 244, 239, 0.16);
+          --text: #f5f4ef;
+          --text-2: #a8a69e;
+          --text-3: #76746d;
+
+          --pp-blue: #c86442;
+          --pp-blue-hover: #d67352;
+          --pp-blue-tint: rgba(200, 100, 66, 0.18);
+          --pp-blue-tint-strong: rgba(200, 100, 66, 0.26);
+          --pp-green: #7fb069;
+          --pp-red: #e06c5c;
+          --pp-bg: #1f1f1d;
+          --pp-bg-secondary: #2a2a27;
+          --pp-bg-hover: #343430;
+          --pp-border: #383834;
+          --pp-border-subtle: #2e2e2a;
+          --pp-text: #f3f3ef;
+          --pp-text-2: #a8a8a1;
+          --pp-text-3: #7c7c76;
+          --pp-icon: #d4d4cd;
+          --pp-icon-hover: #f3f3ef;
+          --pp-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.09);
+        }
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 400 15px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      a { color: inherit; text-decoration: none; }
+      button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+      input { font: inherit; color: inherit; }
+      img { display: block; max-width: 100%; height: auto; }
+      :focus-visible { outline: 2px solid var(--pp-blue); outline-offset: 2px; }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Minimal top bar (Cursor-style) */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .nav-inner {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+      .brand svg { width: 22px; height: 22px; flex: none; }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        font-size: 14px;
+        color: var(--text-2);
+      }
+      .nav-links a { transition: color 140ms var(--ease); }
+      .nav-links a:hover { color: var(--text); }
+
+      /* Single-column left-aligned Hero (Cursor-style — zero awkward right gap) */
+      .hero {
+        padding: 64px 0 84px;
+      }
+      .hero-copy {
+        max-width: 100%;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 3.5vw, 40px);
+        line-height: 1.15;
+        font-weight: 600;
+        letter-spacing: -0.028em;
+        text-wrap: balance;
+      }
+      .hero-sub {
+        margin: 12px 0 0;
+        font-size: 16px;
+        line-height: 1.55;
+        color: var(--text-2);
+      }
+      .hero-actions {
+        margin-top: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        height: 38px;
+        padding: 0 15px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 1px 2px rgba(20, 20, 19, 0.05);
+        transition: background-color 140ms var(--ease), border-color 140ms var(--ease), transform 120ms var(--ease);
+      }
+      .btn:hover {
+        background: var(--surface-2);
+        border-color: color-mix(in srgb, var(--text) 26%, transparent);
+      }
+      .btn:active { transform: scale(0.98); }
+      .btn-icon { width: 17px; height: 17px; flex: none; display: block; }
+
+      /* Browser window hosting the REAL Marklet overlay UI (no box-in-box wrapper) */
+      .demo-win {
+        position: relative;
+        margin-top: 44px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 2px 6px rgba(20, 20, 19, 0.04), 0 20px 52px rgba(20, 20, 19, 0.1);
+        overflow: hidden;
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+      }
+      @media (prefers-color-scheme: dark) {
+        .demo-win {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 24px 60px rgba(0, 0, 0, 0.45);
+        }
+      }
+      .demo-chrome {
+        height: 40px;
+        padding: 0 14px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex: none;
+      }
+      .demo-dots { display: flex; gap: 6px; }
+      .demo-dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-strong);
+      }
+      .demo-url {
+        padding: 3px 12px;
+        border-radius: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font: 400 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: var(--text-2);
+      }
+      .demo-status {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+
+      /* Viewport inside the demo browser */
+      .demo-viewport {
+        position: relative;
+        flex: 1;
+        min-height: 500px;
+        background: var(--bg);
+        overflow: hidden;
+      }
+      .demo-viewport.is-picking { cursor: crosshair; }
+
+      /* Mock target web app inside the viewport (full responsive width) */
+      .mock-app {
+        width: 100%;
+        padding: 32px 40px 92px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .mock-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .mock-title { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; }
+      .mock-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+      .mock-actions { display: flex; align-items: center; gap: 8px; }
+      .mock-btn {
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-2);
+        display: inline-flex;
+        align-items: center;
+      }
+      .mock-btn.primary {
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--bg);
+      }
+      .mock-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .mock-stat {
+        padding: 16px;
+        border-radius: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+      .mock-stat-label { font-size: 12px; color: var(--text-3); }
+      .mock-stat-val {
+        margin-top: 6px;
+        font-size: 24px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .mock-stat-delta { margin-top: 4px; font-size: 12px; color: var(--text-2); }
+      .mock-table {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .mock-row {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr 0.7fr;
+        align-items: center;
+        padding: 12px 16px;
+        font-size: 13px;
+        border-top: 1px solid var(--border);
+      }
+      .mock-row:first-child {
+        border-top: 0;
+        background: var(--surface-2);
+        color: var(--text-3);
+        font-size: 12px;
+      }
+      .mock-row .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-2);
+      }
+
+      /* Commentable target hover highlight (matches real .pp-highlight) */
+      [data-el] {
+        position: relative;
+        transition: box-shadow 100ms ease, background-color 100ms ease;
+      }
+      .demo-viewport.is-picking [data-el]:hover {
+        box-shadow: 0 0 0 1.5px var(--pp-blue);
+        border-radius: 6px;
+      }
+      [data-el].is-highlighted {
+        box-shadow: 0 0 0 1.5px var(--pp-blue);
+      }
+
+      /* ================================================================
+         REAL MARKLET OVERLAY UI (ported directly from src/core/overlay.css)
+         ================================================================ */
+
+      /* Real teardrop pin (.pp-pin) */
+      .pp-pin {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px 15px 15px 2px;
+        background: #ffffff;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(0, 0, 0, 0.08);
+        transition: transform 180ms var(--pp-spring), background 120ms ease, box-shadow 140ms ease;
+        transform-origin: bottom left;
+        z-index: 15;
+      }
+      .pp-pin-inner {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: #ffffff;
+        background: var(--pp-blue);
+      }
+      .pp-pin:hover { transform: scale(1.1); }
+      .pp-pin.is-active {
+        background: var(--pp-blue);
+        transform: scale(1.1);
+        box-shadow: 0 4px 14px rgba(201, 100, 66, 0.42), 0 0 0 1.5px #ffffff;
+      }
+      .pp-pin.is-active .pp-pin-inner { background: rgba(255, 255, 255, 0.24); }
+      .pp-pin.is-resolved .pp-pin-inner { background: #a1a1aa; }
+
+      /* Real floating comment popover card (.pp-card) */
+      .pp-card {
+        position: absolute;
+        width: 316px;
+        display: none;
+        flex-direction: column;
+        background: var(--pp-bg);
+        color: var(--pp-text);
+        border-radius: 14px;
+        box-shadow: var(--pp-shadow);
+        overflow: hidden;
+        z-index: 25;
+        font-size: 13px;
+        animation: pp-pop 140ms var(--ease);
+      }
+      .pp-card.is-open { display: flex; }
+      @keyframes pp-pop {
+        from { opacity: 0; transform: translateY(4px) scale(0.98); }
+        to { opacity: 1; transform: none; }
+      }
+      .pp-card-head {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: 44px;
+        padding: 0 8px 0 14px;
+        border-bottom: 1px solid var(--pp-border-subtle);
+      }
+      .pp-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--pp-text);
+      }
+      .pp-spacer { flex: 1; }
+      .pp-icon-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        color: var(--pp-icon);
+        transition: background 120ms ease, color 120ms ease;
+      }
+      .pp-icon-btn:hover { background: var(--pp-bg-hover); color: var(--pp-icon-hover); }
+      .pp-icon-btn.is-resolved { color: var(--pp-green); }
+      .pp-icon-btn svg { width: 16px; height: 16px; display: block; }
+      .pp-card-body {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .pp-target {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 7px;
+        background: var(--pp-bg-secondary);
+        color: var(--pp-text-2);
+        font: 500 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .pp-msg {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pp-msg-head {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+      }
+      .pp-av {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .pp-author { font-weight: 600; color: var(--pp-text); }
+      .pp-time { color: var(--pp-text-3); font-size: 11.5px; }
+      .pp-msg-text {
+        margin: 0;
+        padding-left: 27px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--pp-text);
+      }
+      .pp-card-foot {
+        padding: 10px 12px;
+        border-top: 1px solid var(--pp-border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .pp-reply-input {
+        flex: 1;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--pp-border);
+        background: var(--pp-bg-secondary);
+        color: var(--pp-text);
+        font-size: 12.5px;
+      }
+      .pp-reply-input::placeholder { color: var(--pp-text-3); }
+      .pp-reply-input:focus {
+        outline: none;
+        border-color: var(--pp-blue);
+        background: var(--pp-bg);
+      }
+      .pp-send-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        background: var(--pp-blue);
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        flex: none;
+        transition: background 120ms ease;
+      }
+      .pp-send-btn:hover { background: var(--pp-blue-hover); }
+      .pp-send-btn svg { width: 14px; height: 14px; display: block; }
+
+      /* Real Figma UI3 floating bottom toolbar (.pp-toolbar) */
+      .pp-toolbar {
+        position: absolute;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        height: 46px;
+        padding: 0 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--pp-bg);
+        border-radius: 13px;
+        box-shadow: var(--pp-shadow);
+        z-index: 30;
+      }
+      .pp-divider {
+        width: 1px;
+        height: 20px;
+        background: var(--pp-border);
+        margin: 0 2px;
+      }
+      .pp-tool {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: var(--pp-icon);
+        transition: background 120ms ease, color 120ms ease, transform 140ms var(--pp-spring);
+      }
+      .pp-tool:hover { background: var(--pp-bg-hover); color: var(--pp-icon-hover); }
+      .pp-tool:active { transform: scale(0.92); }
+      .pp-tool.is-on { background: var(--pp-blue); color: #ffffff; }
+      .pp-tool.is-soft-on { background: var(--pp-blue-tint-strong); color: var(--pp-blue); }
+      .pp-tool svg { width: 18px; height: 18px; display: block; }
+      .pp-dot {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--pp-red);
+        box-shadow: 0 0 0 1.5px var(--pp-bg);
+      }
+      .pp-pick-bar {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 0 4px 0 6px;
+        font-size: 12px;
+        color: var(--pp-text);
+        white-space: nowrap;
+      }
+      .pp-toolbar.is-picking .pp-normal-tools { display: none; }
+      .pp-toolbar.is-picking .pp-pick-bar { display: flex; }
+      .pp-normal-tools { display: flex; align-items: center; gap: 4px; }
+      .pp-pick-done {
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 7px;
+        background: var(--pp-bg-secondary);
+        color: var(--pp-text);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .pp-pick-done:hover { background: var(--pp-bg-hover); }
+
+      /* Real floating right-hand Sidebar (.pp-sidebar) */
+      .pp-sidebar {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: 296px;
+        background: var(--pp-bg);
+        border-radius: 14px;
+        box-shadow: var(--pp-shadow);
+        display: flex;
+        flex-direction: column;
+        z-index: 28;
+        transform: translateX(calc(100% + 24px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 200ms var(--ease), opacity 160ms var(--ease);
+      }
+      .pp-sidebar.is-open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .pp-sb-head {
+        height: 46px;
+        padding: 0 10px 0 14px;
+        border-bottom: 1px solid var(--pp-border-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pp-sb-title { font-size: 13.5px; font-weight: 600; color: var(--pp-text); }
+      .pp-seg {
+        margin: 10px 12px 6px;
+        padding: 3px;
+        border-radius: 9px;
+        background: var(--pp-bg-secondary);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        position: relative;
+      }
+      .pp-seg-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: calc(50% - 3px);
+        height: calc(100% - 6px);
+        border-radius: 7px;
+        background: var(--pp-bg);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        transition: transform 180ms var(--ease);
+      }
+      .pp-seg.is-resolved .pp-seg-thumb { transform: translateX(100%); }
+      .pp-seg-btn {
+        position: relative;
+        z-index: 1;
+        height: 26px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--pp-text-2);
+        transition: color 140ms ease;
+      }
+      .pp-seg-btn.is-active { color: var(--pp-text); }
+      .pp-sb-list {
+        flex: 1;
+        padding: 6px 12px 12px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .pp-sb-item {
+        width: 100%;
+        text-align: left;
+        padding: 10px 11px;
+        border-radius: 10px;
+        border: 1px solid var(--pp-border);
+        background: var(--pp-bg-secondary);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+      .pp-sb-item:hover { background: var(--pp-bg-hover); }
+      .pp-sb-item.is-active {
+        border-color: var(--pp-blue);
+        background: var(--pp-blue-tint);
+      }
+      .pp-sb-empty {
+        padding: 28px 12px;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--pp-text-3);
+      }
+      .pp-sb-foot {
+        padding: 10px 12px;
+        border-top: 1px solid var(--pp-border-subtle);
+        display: flex;
+        gap: 8px;
+      }
+      .pp-sb-primary {
+        flex: 1;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--pp-blue);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pp-sb-primary:hover { background: var(--pp-blue-hover); }
+      .pp-sb-sec {
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--pp-border);
+        background: var(--pp-bg-secondary);
+        color: var(--pp-text);
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+      }
+      .pp-sb-sec:hover { background: var(--pp-bg-hover); }
+
+      /* Subtle toast inside demo */
+      .pp-toast {
+        position: absolute;
+        left: 50%;
+        bottom: 72px;
+        transform: translateX(-50%) translateY(6px);
+        padding: 7px 13px;
+        border-radius: 9px;
+        background: var(--text);
+        color: var(--bg);
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 35;
+        transition: opacity 150ms var(--ease), transform 150ms var(--ease);
+      }
+      .pp-toast.is-show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* Single clean 3-step vector flow strip */
+      .flow-sec {
+        padding: 64px 0 76px;
+        border-top: 1px solid var(--border);
+      }
+      .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .flow-item {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .flow-vis {
+        height: 112px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+      }
+      .flow-vis svg {
+        width: 100%;
+        max-width: 224px;
+        height: 76px;
+        display: block;
+      }
+      .flow-cap {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .flow-num {
+        font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: var(--text-3);
+      }
+      .flow-desc {
+        margin: -6px 0 0;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: var(--text-2);
+      }
+
+      /* Minimal footer */
+      footer {
+        padding: 32px 0 44px;
+        border-top: 1px solid var(--border);
+        font-size: 13.5px;
+        color: var(--text-3);
+      }
+      .foot-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .foot-author a {
+        color: var(--text-2);
+        text-decoration: underline;
+        text-decoration-color: var(--border-strong);
+        text-underline-offset: 3px;
+        transition: color 140ms var(--ease), text-decoration-color 140ms var(--ease);
+      }
+      .foot-author a:hover {
+        color: var(--text);
+        text-decoration-color: var(--text);
+      }
+      .foot-links {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .foot-links a { transition: color 140ms var(--ease); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 900px) {
+        .flow-grid { grid-template-columns: 1fr; gap: 20px; }
+        .mock-stats { grid-template-columns: 1fr; }
+        .mock-app { padding: 24px 20px 88px; }
+      }
+      @media (max-width: 640px) {
+        .hero { padding: 40px 0 56px; }
+        .flow-sec { padding: 48px 0 56px; }
+        .demo-status { display: none; }
+        .pp-sidebar { width: calc(100% - 24px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        *, *::before, *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#">
+          <svg viewBox="0 0 128 128" fill="none" aria-hidden="true">
+            <rect width="128" height="128" rx="30" fill="#F0EEE6" />
+            <path d="M34 44C34 35.16 41.16 28 50 28H68V94C68 98.42 64.42 102 60 102H42C37.58 102 34 98.42 34 94V44Z" fill="#141413" />
+            <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
+          </svg>
+          <span>Marklet</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="./privacy.html">Privacy</a>
+          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <div class="hero-copy">
+            <h1>Figma-style feedback on any web prototype</h1>
+            <p class="hero-sub">
+              Send your team a link for async reviews, merge every comment, and export for AI to iterate.
+            </p>
+            <div class="hero-actions">
+              <a
+                class="btn"
+                href="https://chromewebstore.google.com/detail/marklet-%E2%80%94-visual-comments/pkiegfieoakiggifpgoliodceglkmdel"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <svg class="btn-icon" viewBox="0 0 256 256" aria-hidden="true">
+                  <path fill="#fff" d="M128.003 199.216c39.335 0 71.221-31.888 71.221-71.223S167.338 56.77 128.003 56.77S56.78 88.658 56.78 127.993s31.887 71.223 71.222 71.223"/>
+                  <path fill="#229342" d="M35.89 92.997Q27.92 79.192 17.154 64.02a127.98 127.98 0 0 0 110.857 191.981q17.671-24.785 23.996-35.74q12.148-21.042 31.423-60.251v-.015a63.993 63.993 0 0 1-110.857.017Q46.395 111.19 35.89 92.998"/>
+                  <path fill="#fbc116" d="M128.008 255.996A127.97 127.97 0 0 0 256 127.997A128 128 0 0 0 238.837 64q-36.372-3.585-53.686-3.585q-19.632 0-57.152 3.585l-.014.01a63.99 63.99 0 0 1 55.444 31.987a63.99 63.99 0 0 1-.001 64.01z"/>
+                  <path fill="#1a73e8" d="M128.003 178.677c27.984 0 50.669-22.685 50.669-50.67s-22.685-50.67-50.67-50.67c-27.983 0-50.669 22.686-50.669 50.67s22.686 50.67 50.67 50.67"/>
+                  <path fill="#e33b2e" d="M128.003 64.004H238.84a127.973 127.973 0 0 0-221.685.015l55.419 95.99l.015.008a63.993 63.993 0 0 1 55.415-96.014z"/>
+                </svg>
+                Install for Chrome
+              </a>
+              <a
+                class="btn"
+                href="https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <svg class="btn-icon" viewBox="0 0 256 256" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="edge-b" cx="161.83" cy="788.401" r="95.38" gradientTransform="matrix(.9999 0 0 .9498 -4.622 -570.387)" gradientUnits="userSpaceOnUse"><stop offset=".72" stop-opacity="0"/><stop offset=".95" stop-opacity=".53"/><stop offset="1"/></radialGradient>
+                    <radialGradient id="edge-d" cx="-773.636" cy="746.715" r="143.24" gradientTransform="matrix(.15 -.9898 .8 .12 -410.718 -656.341)" gradientUnits="userSpaceOnUse"><stop offset=".76" stop-opacity="0"/><stop offset=".95" stop-opacity=".5"/><stop offset="1"/></radialGradient>
+                    <radialGradient id="edge-e" cx="230.593" cy="-106.038" r="202.43" gradientTransform="matrix(-.04 .9998 -2.1299 -.07998 -190.775 -191.635)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#35c1f1"/><stop offset=".11" stop-color="#34c1ed"/><stop offset=".23" stop-color="#2fc2df"/><stop offset=".31" stop-color="#2bc3d2"/><stop offset=".67" stop-color="#36c752"/></radialGradient>
+                    <radialGradient id="edge-f" cx="536.357" cy="-117.703" r="97.34" gradientTransform="matrix(.28 .9598 -.78 .23 -1.928 -410.318)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#66eb6e"/><stop offset="1" stop-color="#66eb6e" stop-opacity="0"/></radialGradient>
+                    <linearGradient id="edge-a" x1="63.334" x2="241.617" y1="757.83" y2="757.83" gradientTransform="translate(-4.63 -580.81)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0c59a4"/><stop offset="1" stop-color="#114a8b"/></linearGradient>
+                    <linearGradient id="edge-c" x1="157.401" x2="46.028" y1="680.556" y2="801.868" gradientTransform="translate(-4.63 -580.81)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1b9de2"/><stop offset=".16" stop-color="#1595df"/><stop offset=".67" stop-color="#0680d7"/><stop offset="1" stop-color="#0078d4"/></linearGradient>
+                  </defs>
+                  <path fill="url(#edge-a)" d="M231 190.5c-3.4 1.8-6.9 3.4-10.5 4.7c-11.5 4.3-23.6 6.5-35.9 6.5c-47.3 0-88.5-32.5-88.5-74.3c.1-11.4 6.4-21.9 16.4-27.3c-42.8 1.8-53.8 46.4-53.8 72.5c0 73.9 68.1 81.4 82.8 81.4c7.9 0 19.8-2.3 27-4.6l1.3-.4c27.6-9.5 51-28.1 66.6-52.8c1.2-1.9.6-4.3-1.2-5.5c-1.3-.8-2.9-.9-4.2-.2"/>
+                  <path fill="url(#edge-b)" d="M231 190.5c-3.4 1.8-6.9 3.4-10.5 4.7c-11.5 4.3-23.6 6.5-35.9 6.5c-47.3 0-88.5-32.5-88.5-74.3c.1-11.4 6.4-21.9 16.4-27.3c-42.8 1.8-53.8 46.4-53.8 72.5c0 73.9 68.1 81.4 82.8 81.4c7.9 0 19.8-2.3 27-4.6l1.3-.4c27.6-9.5 51-28.1 66.6-52.8c1.2-1.9.6-4.3-1.2-5.5c-1.3-.8-2.9-.9-4.2-.2" opacity=".35"/>
+                  <path fill="url(#edge-c)" d="M105.7 241.4c-8.9-5.5-16.6-12.8-22.7-21.3c-26.3-36-18.4-86.5 17.6-112.8c3.8-2.7 7.7-5.2 11.9-7.2c3.1-1.5 8.4-4.1 15.5-4c10.1.1 19.6 4.9 25.7 13c4 5.4 6.3 11.9 6.4 18.7c0-.2 24.5-79.6-80-79.6c-43.9 0-80 41.7-80 78.2c-.2 19.3 4 38.5 12.1 56c27.6 58.8 94.8 87.6 156.4 67.1c-21.1 6.6-44.1 3.7-62.9-8.1"/>
+                  <path fill="url(#edge-d)" d="M105.7 241.4c-8.9-5.5-16.6-12.8-22.7-21.3c-26.3-36-18.4-86.5 17.6-112.8c3.8-2.7 7.7-5.2 11.9-7.2c3.1-1.5 8.4-4.1 15.5-4c10.1.1 19.6 4.9 25.7 13c4 5.4 6.3 11.9 6.4 18.7c0-.2 24.5-79.6-80-79.6c-43.9 0-80 41.7-80 78.2c-.2 19.3 4 38.5 12.1 56c27.6 58.8 94.8 87.6 156.4 67.1c-21.1 6.6-44.1 3.7-62.9-8.1" opacity=".41"/>
+                  <path fill="url(#edge-e)" d="M152.3 148.9c-.8 1-3.3 2.5-3.3 5.7c0 2.6 1.7 5.1 4.7 7.2c14.4 10 41.5 8.7 41.6 8.7c10.7 0 21.1-2.9 30.3-8.3c18.8-11 30.4-31.1 30.4-52.9c.3-22.4-8-37.3-11.3-43.9C223.5 23.9 177.7 0 128 0C58 0 1 56.2 0 126.2c.5-36.5 36.8-66 80-66c3.5 0 23.5.3 42 10.1c16.3 8.6 24.9 18.9 30.8 29.2c6.2 10.7 7.3 24.1 7.3 29.5c0 5.3-2.7 13.3-7.8 19.9"/>
+                  <path fill="url(#edge-f)" d="M152.3 148.9c-.8 1-3.3 2.5-3.3 5.7c0 2.6 1.7 5.1 4.7 7.2c14.4 10 41.5 8.7 41.6 8.7c10.7 0 21.1-2.9 30.3-8.3c18.8-11 30.4-31.1 30.4-52.9c.3-22.4-8-37.3-11.3-43.9C223.5 23.9 177.7 0 128 0C58 0 1 56.2 0 126.2c.5-36.5 36.8-66 80-66c3.5 0 23.5.3 42 10.1c16.3 8.6 24.9 18.9 30.8 29.2c6.2 10.7 7.3 24.1 7.3 29.5c0 5.3-2.7 13.3-7.8 19.9"/>
+                </svg>
+                Install for Edge
+              </a>
+            </div>
+          </div>
+
+          <!-- Live browser window with REAL Marklet overlay UI -->
+          <div class="demo-win" aria-label="Interactive Marklet preview">
+              <div class="demo-chrome">
+                <div class="demo-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div class="demo-url">staging.acmecloud.app/dashboard</div>
+                <div class="demo-status">Try clicking pins or the toolbar</div>
+              </div>
+
+              <div class="demo-viewport" id="demo-viewport">
+                <div class="mock-app">
+                  <div class="mock-head">
+                    <div data-el="heading" data-label='<h1> "Workspace overview"'>
+                      <div class="mock-title">Workspace overview</div>
+                      <div class="mock-sub">Production clusters and release metrics</div>
+                    </div>
+                    <div class="mock-actions">
+                      <span class="mock-btn" data-el="export" data-label='<button> "Export CSV"'>Export CSV</span>
+                      <span class="mock-btn primary" data-el="deploy" data-label='<button> "+ New deploy"'>+ New deploy</span>
+                    </div>
+                  </div>
+
+                  <div class="mock-stats">
+                    <div class="mock-stat" data-el="spend" data-label='<div> "Monthly spend"'>
+                      <div class="mock-stat-label">Monthly spend</div>
+                      <div class="mock-stat-val">$8,420</div>
+                      <div class="mock-stat-delta">-3.4% vs last month</div>
+                    </div>
+                    <div class="mock-stat" data-el="instances" data-label='<div> "Active instances"'>
+                      <div class="mock-stat-label">Active instances</div>
+                      <div class="mock-stat-val">128</div>
+                      <div class="mock-stat-delta">+12% vs last month</div>
+                    </div>
+                    <div class="mock-stat" data-el="sla" data-label='<div> "Uptime SLA"'>
+                      <div class="mock-stat-label">Uptime SLA</div>
+                      <div class="mock-stat-val">99.98%</div>
+                      <div class="mock-stat-delta">Past 30 days</div>
+                    </div>
+                  </div>
+
+                  <div class="mock-table" data-el="table" data-label='<table> "Services"'>
+                    <div class="mock-row">
+                      <span>Service</span>
+                      <span>Region</span>
+                      <span class="num">Latency</span>
+                    </div>
+                    <div class="mock-row">
+                      <span>Atlas analytics</span>
+                      <span style="color:var(--text-2);">us-west-2</span>
+                      <span class="num">24 ms</span>
+                    </div>
+                    <div class="mock-row">
+                      <span>Edge gateway</span>
+                      <span style="color:var(--text-2);">eu-central-1</span>
+                      <span class="num">18 ms</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pins layer (rendered dynamically in real Marklet style) -->
+                <div id="pins-layer"></div>
+
+                <!-- Real Marklet floating Comment Popover (.pp-card) -->
+                <div class="pp-card" id="pp-card" role="dialog" aria-label="Comment thread">
+                  <div class="pp-card-head">
+                    <span class="pp-card-title" id="pp-card-title">Comment #1</span>
+                    <span class="pp-spacer"></span>
+                    <button class="pp-icon-btn" id="pp-resolve-btn" type="button" title="Resolve comment" aria-label="Resolve comment">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="M7 10.2 9.1 12.3 13.3 7.8"/></svg>
+                    </button>
+                    <button class="pp-icon-btn" id="pp-close-card" type="button" title="Close" aria-label="Close">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>
+                    </button>
+                  </div>
+                  <div class="pp-card-body">
+                    <div class="pp-target" id="pp-card-target"></div>
+                    <div id="pp-card-msgs"></div>
+                  </div>
+                  <form class="pp-card-foot" id="pp-reply-form">
+                    <input class="pp-reply-input" id="pp-reply-input" type="text" placeholder="Reply..." autocomplete="off" />
+                    <button class="pp-send-btn" type="submit" aria-label="Send reply">
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5V3.5M4.5 7 8 3.5 11.5 7"/></svg>
+                    </button>
+                  </form>
+                </div>
+
+                <!-- Real Marklet floating right-hand Sidebar (.pp-sidebar) -->
+                <aside class="pp-sidebar" id="pp-sidebar" aria-label="Comments sidebar">
+                  <div class="pp-sb-head">
+                    <span class="pp-sb-title">Comments</span>
+                    <button class="pp-icon-btn" id="pp-close-sb" type="button" aria-label="Close sidebar">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>
+                    </button>
+                  </div>
+                  <div class="pp-seg" id="pp-seg">
+                    <span class="pp-seg-thumb" aria-hidden="true"></span>
+                    <button class="pp-seg-btn is-active" type="button" data-filter="open">Open (<span id="count-open">2</span>)</button>
+                    <button class="pp-seg-btn" type="button" data-filter="resolved">Resolved (<span id="count-resolved">0</span>)</button>
+                  </div>
+                  <div class="pp-sb-list" id="pp-sb-list"></div>
+                  <div class="pp-sb-foot">
+                    <button class="pp-sb-primary" id="pp-sb-export" type="button">Export .zip</button>
+                    <button class="pp-sb-sec" id="pp-sb-send" type="button">Send</button>
+                  </div>
+                </aside>
+
+                <!-- Real Marklet floating bottom toolbar (.pp-toolbar) -->
+                <div class="pp-toolbar" id="pp-toolbar" role="toolbar" aria-label="Marklet toolbar">
+                  <div class="pp-normal-tools">
+                    <button class="pp-tool" id="tool-comment" type="button" title="Add comment (C)" aria-label="Add comment">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5a6.5 6.5 0 0 1 6.5 6.5c0 3.59-2.91 6.5-6.5 6.5H4.5a1 1 0 0 1-1-1V10A6.5 6.5 0 0 1 10 3.5Z"/><path d="M10 7.5v5M7.5 10h5"/></svg>
+                    </button>
+                    <button class="pp-tool" id="tool-sidebar" type="button" title="Toggle sidebar (S)" aria-label="Toggle sidebar">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/><path d="M12.5 4v12"/></svg>
+                      <span class="pp-dot" id="tool-dot"></span>
+                    </button>
+                    <span class="pp-divider" aria-hidden="true"></span>
+                    <button class="pp-tool" id="tool-send" type="button" title="Copy feedback link" aria-label="Copy feedback link">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3 9.5 10.5M17 3l-4.8 14-2.7-6.5L3 7.8 17 3Z"/></svg>
+                    </button>
+                    <button class="pp-tool" id="tool-export" type="button" title="Export Design Brief .zip" aria-label="Export Design Brief">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5v9M6.8 9.3 10 12.5l3.2-3.2M4 15.5h12"/></svg>
+                    </button>
+                  </div>
+                  <div class="pp-pick-bar">
+                    <span>Click any element to comment</span>
+                    <button class="pp-pick-done" id="tool-pick-done" type="button">Done</button>
+                  </div>
+                </div>
+
+                <div class="pp-toast" id="pp-toast" role="status" aria-live="polite"></div>
+              </div>
+            </div>
+        </div>
+      </section>
+
+      <section class="flow-sec" aria-label="How Marklet works">
+        <div class="wrap">
+          <div class="flow-grid">
+            <div class="flow-item">
+              <div class="flow-vis" aria-hidden="true">
+                <svg viewBox="0 0 220 72" fill="none">
+                  <rect x="44" y="12" width="116" height="48" rx="9" fill="var(--bg)" stroke="var(--border-strong)" />
+                  <rect x="56" y="23" width="44" height="7" rx="3.5" fill="var(--border-strong)" />
+                  <rect x="56" y="36" width="66" height="14" rx="4" fill="var(--pp-blue-tint)" stroke="var(--pp-blue)" />
+                  <rect x="64" y="41" width="40" height="4" rx="2" fill="var(--pp-blue)" opacity="0.65" />
+                  <path d="M138 14C146.28 14 153 20.72 153 29C153 37.28 146.28 44 138 44H125C123.9 44 123 43.1 123 42V29C123 20.72 129.72 14 138 14Z" fill="var(--pp-blue)" />
+                  <text x="138" y="33" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600" font-family="ui-sans-serif, system-ui, sans-serif">1</text>
+                </svg>
+              </div>
+              <div class="flow-cap"><span class="flow-num">01</span><span>Mark the page</span></div>
+              <p class="flow-desc">Click any UI element to attach a comment with an automatic cropped snapshot.</p>
+            </div>
+
+            <div class="flow-item">
+              <div class="flow-vis" aria-hidden="true">
+                <svg viewBox="0 0 220 72" fill="none">
+                  <rect x="24" y="20" width="66" height="32" rx="8" fill="var(--bg)" stroke="var(--border-strong)" />
+                  <circle cx="40" cy="36" r="6" fill="var(--pp-blue)" />
+                  <rect x="52" y="32" width="26" height="3.5" rx="1.75" fill="var(--text-3)" />
+                  <rect x="52" y="38.5" width="18" height="3.5" rx="1.75" fill="var(--border-strong)" />
+                  <path d="M98 36H118M113 31.5L118 36L113 40.5" stroke="var(--pp-blue)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  <rect x="126" y="20" width="70" height="32" rx="8" fill="var(--pp-blue-tint)" stroke="var(--pp-blue)" />
+                  <path d="M153 36L168 29.5L162.5 43.5L159.5 37.5L153 36Z" stroke="var(--pp-blue)" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div class="flow-cap"><span class="flow-num">02</span><span>Send a link</span></div>
+              <p class="flow-desc">Copy a clean feedback link into Teams, Slack, or email — nothing is uploaded to a cloud.</p>
+            </div>
+
+            <div class="flow-item">
+              <div class="flow-vis" aria-hidden="true">
+                <svg viewBox="0 0 220 72" fill="none">
+                  <circle cx="48" cy="24" r="9" fill="#6a9bcc" />
+                  <circle cx="48" cy="48" r="9" fill="#557144" />
+                  <path d="M59 24C74 24 76 36 92 36" stroke="var(--border-strong)" stroke-width="1.5" />
+                  <path d="M59 48C74 48 76 36 92 36" stroke="var(--border-strong)" stroke-width="1.5" />
+                  <rect x="94" y="14" width="82" height="44" rx="9" fill="var(--bg)" stroke="var(--border-strong)" />
+                  <rect x="106" y="24" width="38" height="4" rx="2" fill="var(--text-3)" />
+                  <rect x="106" y="32" width="54" height="3.5" rx="1.75" fill="var(--border-strong)" />
+                  <rect x="106" y="40" width="52" height="11" rx="5.5" fill="var(--pp-blue)" />
+                  <text x="132" y="48" text-anchor="middle" fill="#ffffff" font-size="7.5" font-weight="600" font-family="ui-monospace, monospace">.ZIP · AI</text>
+                </svg>
+              </div>
+              <div class="flow-cap"><span class="flow-num">03</span><span>Merge and export for AI</span></div>
+              <p class="flow-desc">Combine your team's notes in one click, then export a .zip brief for your coding agent.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap foot-inner">
+        <span class="foot-author">Marklet · Built by <a href="https://shawndeng.com" target="_blank" rel="noreferrer">Shawn Deng</a></span>
+        <div class="foot-links">
+          <a href="./privacy.html">Privacy</a>
+          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/iamshawndeng/marklet/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">Changelog</a>
+          <a href="https://github.com/iamshawndeng/marklet/issues" target="_blank" rel="noreferrer">Feedback</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      (() => {
+        const viewport = document.getElementById('demo-viewport');
+        const pinsLayer = document.getElementById('pins-layer');
+        const card = document.getElementById('pp-card');
+        const cardTitle = document.getElementById('pp-card-title');
+        const cardTarget = document.getElementById('pp-card-target');
+        const cardMsgs = document.getElementById('pp-card-msgs');
+        const resolveBtn = document.getElementById('pp-resolve-btn');
+        const closeCardBtn = document.getElementById('pp-close-card');
+        const replyForm = document.getElementById('pp-reply-form');
+        const replyInput = document.getElementById('pp-reply-input');
+        const sidebar = document.getElementById('pp-sidebar');
+        const sbList = document.getElementById('pp-sb-list');
+        const seg = document.getElementById('pp-seg');
+        const countOpen = document.getElementById('count-open');
+        const countResolved = document.getElementById('count-resolved');
+        const toolbar = document.getElementById('pp-toolbar');
+        const toolComment = document.getElementById('tool-comment');
+        const toolSidebar = document.getElementById('tool-sidebar');
+        const toolDot = document.getElementById('tool-dot');
+        const toolPickDone = document.getElementById('tool-pick-done');
+        const toast = document.getElementById('pp-toast');
+
+        const comments = [
+          {
+            id: 1,
+            el: 'deploy',
+            label: '<button> "+ New deploy"',
+            resolved: false,
+            messages: [
+              { author: 'Shawn', initial: 'S', color: '#557144', time: '2m ago', text: 'Tighten horizontal padding and match the secondary button height.' }
+            ]
+          },
+          {
+            id: 2,
+            el: 'spend',
+            label: '<div> "Monthly spend"',
+            resolved: false,
+            messages: [
+              { author: 'Alex', initial: 'A', color: '#6a9bcc', time: 'Just now', text: 'Use tabular numerals for the spend figure so digits align cleanly.' }
+            ]
+          }
+        ];
+
+        let activeId = 1;
+        let picking = false;
+        let sidebarOpen = false;
+        let filter = 'open';
+        let toastTimer = null;
+
+        const esc = (s) =>
+          String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        const showToast = (msg) => {
+          toast.textContent = msg;
+          toast.classList.add('is-show');
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => toast.classList.remove('is-show'), 2000);
+        };
+
+        const getElRect = (elKey) => {
+          const el = viewport.querySelector(`[data-el="${elKey}"]`);
+          if (!el) return null;
+          const vr = viewport.getBoundingClientRect();
+          const er = el.getBoundingClientRect();
+          return {
+            left: er.left - vr.left,
+            top: er.top - vr.top,
+            right: er.right - vr.left,
+            bottom: er.bottom - vr.top,
+            width: er.width,
+            height: er.height
+          };
+        };
+
+        const render = () => {
+          // Highlights
+          viewport.querySelectorAll('[data-el]').forEach((el) => el.classList.remove('is-highlighted'));
+          const active = comments.find((c) => c.id === activeId);
+          if (active) {
+            const targetEl = viewport.querySelector(`[data-el="${active.el}"]`);
+            if (targetEl) targetEl.classList.add('is-highlighted');
+          }
+
+          // Pins
+          pinsLayer.innerHTML = '';
+          comments.forEach((c) => {
+            const rect = getElRect(c.el);
+            if (!rect) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pp-pin' + (c.id === activeId ? ' is-active' : '') + (c.resolved ? ' is-resolved' : '');
+            btn.style.left = Math.max(8, rect.right - 14) + 'px';
+            btn.style.top = Math.max(8, rect.top - 14) + 'px';
+            btn.setAttribute('aria-label', `Open comment ${c.id}`);
+            btn.innerHTML = `<span class="pp-pin-inner">${c.id}</span>`;
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              activeId = activeId === c.id ? null : c.id;
+              render();
+            });
+            pinsLayer.appendChild(btn);
+          });
+
+          // Popover card
+          if (active) {
+            const rect = getElRect(active.el);
+            cardTitle.textContent = `Comment #${active.id}`;
+            cardTarget.textContent = active.label;
+            resolveBtn.classList.toggle('is-resolved', active.resolved);
+            cardMsgs.innerHTML = active.messages
+              .map(
+                (m) => `
+                  <div class="pp-msg">
+                    <div class="pp-msg-head">
+                      <span class="pp-av" style="background:${m.color}">${m.initial}</span>
+                      <span class="pp-author">${m.author}</span>
+                      <span class="pp-time">${m.time}</span>
+                    </div>
+                    <p class="pp-msg-text">${esc(m.text)}</p>
+                  </div>
+                `
+              )
+              .join('');
+            card.classList.add('is-open');
+
+            if (rect) {
+              const vw = viewport.clientWidth;
+              const vh = viewport.clientHeight;
+              const cw = 316;
+              const ch = card.offsetHeight || 190;
+              let left = rect.right + 16;
+              if (left + cw > vw - (sidebarOpen ? 320 : 16)) {
+                left = Math.max(16, rect.left - cw - 16);
+                if (left === 16 && rect.left < 180) left = Math.min(vw - cw - 16, rect.left);
+              }
+              let top = rect.top;
+              if (top + ch > vh - 76) top = Math.max(12, vh - ch - 76);
+              card.style.left = left + 'px';
+              card.style.top = top + 'px';
+            }
+          } else {
+            card.classList.remove('is-open');
+          }
+
+          // Sidebar & counts
+          const openList = comments.filter((c) => !c.resolved);
+          const resolvedList = comments.filter((c) => c.resolved);
+          countOpen.textContent = String(openList.length);
+          countResolved.textContent = String(resolvedList.length);
+          toolDot.style.display = openList.length > 0 ? 'block' : 'none';
+          toolSidebar.classList.toggle('is-soft-on', sidebarOpen);
+          sidebar.classList.toggle('is-open', sidebarOpen);
+          seg.classList.toggle('is-resolved', filter === 'resolved');
+          seg.querySelectorAll('.pp-seg-btn').forEach((b) =>
+            b.classList.toggle('is-active', b.dataset.filter === filter)
+          );
+
+          const shown = filter === 'open' ? openList : resolvedList;
+          if (shown.length === 0) {
+            sbList.innerHTML = `<div class="pp-sb-empty">No ${filter} comments</div>`;
+          } else {
+            sbList.innerHTML = shown
+              .map((c) => {
+                const first = c.messages[0];
+                return `
+                  <button class="pp-sb-item ${c.id === activeId ? 'is-active' : ''}" type="button" data-sb-id="${c.id}">
+                    <span class="pp-msg-head">
+                      <span class="pp-av" style="background:${first.color}">${first.initial}</span>
+                      <span class="pp-author">${first.author}</span>
+                      <span class="pp-time">${first.time}</span>
+                      <span style="margin-left:auto;font:500 11px/1 ui-monospace,monospace;color:var(--pp-blue);">#${c.id}</span>
+                    </span>
+                    <span style="font-size:12.5px;line-height:1.45;color:var(--pp-text);">${esc(first.text)}</span>
+                    <span style="font:400 11px/1.3 ui-monospace,monospace;color:var(--pp-text-3);">${esc(c.label)}</span>
+                  </button>
+                `;
+              })
+              .join('');
+            sbList.querySelectorAll('[data-sb-id]').forEach((btn) =>
+              btn.addEventListener('click', () => {
+                activeId = Number(btn.dataset.sbId);
+                render();
+              })
+            );
+          }
+
+          // Toolbar pick mode
+          viewport.classList.toggle('is-picking', picking);
+          toolbar.classList.toggle('is-picking', picking);
+          toolComment.classList.toggle('is-on', picking);
+        };
+
+        // Interactions
+        resolveBtn.addEventListener('click', () => {
+          const c = comments.find((x) => x.id === activeId);
+          if (!c) return;
+          c.resolved = !c.resolved;
+          showToast(c.resolved ? `Resolved #${c.id}` : `Reopened #${c.id}`);
+          render();
+        });
+
+        closeCardBtn.addEventListener('click', () => {
+          activeId = null;
+          render();
+        });
+
+        replyForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const text = replyInput.value.trim();
+          const c = comments.find((x) => x.id === activeId);
+          if (!text || !c) return;
+          c.messages.push({ author: 'You', initial: 'Y', color: '#c96442', time: 'Just now', text });
+          replyInput.value = '';
+          render();
+        });
+
+        toolComment.addEventListener('click', () => {
+          picking = !picking;
+          if (picking) activeId = null;
+          render();
+        });
+        toolPickDone.addEventListener('click', () => {
+          picking = false;
+          render();
+        });
+        toolSidebar.addEventListener('click', () => {
+          sidebarOpen = !sidebarOpen;
+          render();
+        });
+        document.getElementById('pp-close-sb').addEventListener('click', () => {
+          sidebarOpen = false;
+          render();
+        });
+
+        seg.querySelectorAll('.pp-seg-btn').forEach((b) =>
+          b.addEventListener('click', () => {
+            filter = b.dataset.filter;
+            render();
+          })
+        );
+
+        const triggerSend = () => showToast('Feedback link copied');
+        const triggerExport = () => showToast('Exported design-brief.zip');
+        document.getElementById('tool-send').addEventListener('click', triggerSend);
+        document.getElementById('tool-export').addEventListener('click', triggerExport);
+        document.getElementById('pp-sb-send').addEventListener('click', triggerSend);
+        document.getElementById('pp-sb-export').addEventListener('click', triggerExport);
+
+        // Drop a new real comment pin when in Comment mode
+        viewport.querySelectorAll('[data-el]').forEach((el) => {
+          el.addEventListener('click', (e) => {
+            if (!picking) return;
+            e.stopPropagation();
+            const key = el.dataset.el;
+            const existing = comments.find((c) => c.el === key);
+            if (existing) {
+              picking = false;
+              activeId = existing.id;
+              render();
+              return;
+            }
+            const nextId = comments.length + 1;
+            comments.push({
+              id: nextId,
+              el: key,
+              label: el.dataset.label || key,
+              resolved: false,
+              messages: [
+                { author: 'You', initial: 'Y', color: '#c96442', time: 'Just now', text: 'Looks good — tighten the spacing here.' }
+              ]
+            });
+            picking = false;
+            activeId = nextId;
+            render();
+            replyInput.focus();
+          });
+        });
+
+        window.addEventListener('resize', render);
+        render();
+      })();
+    </script>
+  </body>
+</html>
