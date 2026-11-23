@@ -22,4 +22,4 @@ Marklet requests only the minimum permissions required to function:
 - **`identity`** (and Microsoft/Google OAuth host permissions): Used *only* when you explicitly click **Sign in with Microsoft** or **Google** to fetch your display name, email, and avatar for comments.
 
 ## 4. Contact
-If you have any questions about this privacy policy or security practices, please contact Shawn Deng at **shawnzpdeng@gmail.com** or open an issue at [github.com/iamshawndeng/marklet/issues](https://github.com/iamshawndeng/marklet/issues).
+If you have any questions about this privacy policy or security practices, please contact **marklet@shawndeng.com** or open an issue at [github.com/iamshawndeng/marklet/issues](https://github.com/iamshawndeng/marklet/issues).
