@@ -1,20 +1,12 @@
-# Marklet — Visual Comments for Async and AI Workflows
+# Marklet
 
-Leave element-level comments on any webpage or local HTML prototype for async design feedback, team handoff, and agentic workflows.
+Figma-style feedback on any web prototype. Send your team a link for async reviews, merge every comment, and export one `.zip` brief for AI to iterate.
 
-Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript + Vite + Preact) with an isolated Shadow DOM overlay, automatic Light & Dark mode, and a strict least-privilege security model.
+[**Website**](https://iamshawndeng.github.io/marklet/) · [**Chrome Web Store**](https://chromewebstore.google.com/detail/marklet-%E2%80%94-visual-comments/pkiegfieoakiggifpgoliodceglkmdel) · [**Microsoft Edge Add-ons**](https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl) · [**Privacy Policy**](https://iamshawndeng.github.io/marklet/privacy.html)
 
-[![Install on Microsoft Edge Add-ons](https://img.shields.io/badge/Microsoft_Edge-Install_Marklet-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl)
-[![Install on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Marklet-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/marklet-%E2%80%94-visual-comments/pkiegfieoakiggifpgoliodceglkmdel)
+![Marklet — Figma-style feedback on any web prototype](./docs/images/store-1-review.png)
 
-![Marklet — Async team reviews, no setup](./docs/images/screenshot-4-async.png)
-
-![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
-
-<p align="center">
-  <img src="./docs/images/screenshot-2-brief.png" alt="Export a Design Brief in one click" width="49%" />
-  <img src="./docs/images/screenshot-3-privacy.png" alt="Private by design. Light & Dark." width="49%" />
-</p>
+![Marklet — Send a link, merge comments, export for AI](./docs/images/store-2-handoff.png)
 
 ## Highlights
 - **Async team collaboration (`Send` & `Merge`)**: Reviewers click **Send** to copy a clean feedback link into Teams, Slack, or email. The page owner opens each link and clicks **Merge** to combine everyone's comments onto the page without overwriting existing feedback — no workspace setup, no cloud uploads, and page access stays with your site.

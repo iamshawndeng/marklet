@@ -1,39 +1,45 @@
 # Store Listing & Review Submission Kit
 
-Use this sheet when submitting `release/marklet-v0.2.0.zip` to **Chrome Web Store** and **Microsoft Edge Add-ons**.
+Use this sheet when updating `release/marklet-v0.2.0.zip` on **Chrome Web Store** and **Microsoft Edge Add-ons**.
 
 ---
 
 ## 1. Basic Listing Copy
 
-- **Name (50 chars)**:
+- **Name**:
   `Marklet — Visual Comments for Async and AI Workflows`
 
-- **Short Description / Summary (120 chars, limit 132)**:
-  `Leave element-level comments on any webpage or prototype for async design feedback, team handoff, and agentic workflows.`
+- **Short Description / Summary (119 chars, limit 132)**:
+  `Figma-style feedback on any web prototype. Send your team a link for async reviews, merge comments, and export for AI.`
+
+- **Official Website URL**:
+  `https://iamshawndeng.github.io/marklet/`
+
+- **Privacy Policy URL**:
+  `https://iamshawndeng.github.io/marklet/privacy.html`
+
+- **Support / Issues URL**:
+  `https://github.com/iamshawndeng/marklet/issues`
 
 - **Category**:
-  `Developer Tools` (or `Productivity`)
+  `Developer Tools`
 
 - **Detailed Description**:
 ```text
-Marklet lets you leave precise, element-level comments directly on any live webpage or local HTML prototype — without leaving your browser.
+Marklet brings Figma-style comments to any live webpage or local HTML prototype.
 
-Built for designers, product managers, and engineers who want fast async UI feedback and clean handoffs to teammates or AI coding tools.
+Send your team a link for async design reviews, merge everyone's feedback in one click, and export a single .zip brief for AI to iterate.
 
-KEY FEATURES
-• Element-level commenting: Click any UI element to attach a comment, reply in threads, and mark items resolved.
-• Visual context snapshots: Automatically captures a cropped screenshot of the target element so feedback stays clear even after a page changes.
-• Smart DOM anchoring: Re-attaches comments reliably across reloads and inside modals or dialogs.
-• Export Design Brief (.zip): Package open comments, selectors, discussion context, and cropped element screenshots into a single .zip ready for teammates or AI coding agents.
-• Async team handoff: Click Send to copy a clean feedback link for Teams, Slack, or email. Teammates open the link and merge comments in one click — no workspace setup or cloud uploads required.
-• Optional Microsoft & Google Sign-In: Sign in to automatically sync your real name and avatar onto comments, or use Marklet completely anonymously with zero network requests.
-• Works everywhere: Review production web pages, staging apps, or local HTML prototypes (enable "Allow access to file URLs" in extension settings for file:// pages).
-• Light & Dark mode: Automatically matches your system theme.
+How it works
+01. Mark the page — Click Start Review, press C, and click any UI element to attach a comment with an automatic cropped snapshot.
+02. Send a link — Click Send to copy a clean feedback link into Teams, Slack, or email. Nothing is uploaded to a cloud.
+03. Merge and export for AI — Open teammates' links to merge their notes without overwriting yours, then export one .zip brief (Markdown, exact selectors, and cropped snapshots) for Cursor, Claude, Codex, or Antigravity.
 
-PRIVACY & SECURITY FIRST
-• Zero background tracking: Marklet never reads or injects into a page until you explicitly click "Start Review".
-• Private & local by default: All comments and snapshots stay privately on your device using browser local storage. Optional Microsoft / Google sign-in communicates directly with Microsoft or Google only to load your display name and avatar locally.
+Private by default
+• Nothing runs in the background — Marklet only activates when you click Start Review.
+• Local storage — Comments and snapshots stay in your browser.
+• Optional Microsoft & Google sign-in — Sync your name and avatar onto comments, or review anonymously.
+• Works everywhere — Review production pages, staging apps, internal prototypes, or local file:// HTML pages.
 ```
 
 ---
@@ -53,22 +59,8 @@ PRIVACY & SECURITY FIRST
 - **`identity`** & OAuth host permissions (`login.microsoftonline.com`, `graph.microsoft.com`, `accounts.google.com`, `www.googleapis.com`):
   > Used strictly on explicit user action when clicking "Microsoft" or "Google" in the extension popup to authenticate via standard OAuth 2.0 (`chrome.identity.launchWebAuthFlow`) and fetch only the user's display name, email, and profile photo into local browser storage. Never invoked in the background and never requests file or browsing permissions.
 
-### Remote Code Declaration
-- **Are you using remote code?** → **No, I am not using remote code.** (All JS/CSS is bundled inside the extension package.)
-
-### Data Usage Declaration (Chrome Web Store Privacy Practices)
-- Collects user data? → **No** (all checkboxes unchecked)
-- Certify compliance with Limited Use policy → **Checked**
-
 ---
 
-## 3. Store Assets Checklist
-- [x] **Extension archive**: `release/marklet-v0.1.0.zip` (generated via `npm run package`)
-- [x] **Store icon (128×128 PNG)**: `dist/icons/icon-128.png`
-- [x] **Privacy Policy URL**: `https://github.com/iamshawndeng/marklet/blob/main/PRIVACY.md`
-- [x] **Homepage / Support URL**: `https://github.com/iamshawndeng/marklet`
-- [ ] **Screenshots (1280×800 PNG, 1–5 images)**:
-  1. Prototype page with Comments sidebar open + `Export Design Brief` button (Light mode)
-  2. Comment detail card showing cropped element screenshot + replies (Dark mode)
-  3. Extension Popup showing `Start Review` / `Reviewing` + `2 open comments`
-- [ ] **Small Promo Tile (440×280 PNG)** (optional for Chrome, recommended for Edge)
+## 3. Store Screenshots (`1280×800` PNG — 2 high-impact slides)
+1. [docs/images/store-1-review.png](file:///Users/shawndeng/Downloads/marklet/docs/images/store-1-review.png) — **Live Review Experience (Light Mode)**: Full browser prototype with teardrop pins `#1` & `#2`, open `Comment #1` popover, floating bottom toolbar, and open `Comments` sidebar.
+2. [docs/images/store-2-handoff.png](file:///Users/shawndeng/Downloads/marklet/docs/images/store-2-handoff.png) — **Async Link & AI Brief Handoff (Dark Mode)**: Marklet extension popup (`Send 2 comments`), 1-click `Merge 3 comments` bar, and exported `marklet-brief.zip` with `brief.md` + auto-cropped element snapshot.
