@@ -263,11 +263,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 12px 16px;
+        flex-wrap: wrap;
       }
       .mock-title { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; }
       .mock-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
-      .mock-actions { display: flex; align-items: center; gap: 8px; }
+      .mock-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
       .mock-btn {
         height: 32px;
         padding: 0 12px;
@@ -279,6 +280,8 @@
         color: var(--text-2);
         display: inline-flex;
         align-items: center;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
       .mock-btn.primary {
         background: var(--text);
@@ -287,7 +290,7 @@
       }
       .mock-stats {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
       }
       .mock-stat {
@@ -386,7 +389,7 @@
       /* Real floating comment popover card (.pp-card) */
       .pp-card {
         position: absolute;
-        width: 316px;
+        width: min(312px, calc(100% - 24px));
         display: none;
         flex-direction: column;
         background: var(--pp-bg);
@@ -815,13 +818,15 @@
 
       @media (max-width: 900px) {
         .flow-grid { grid-template-columns: 1fr; gap: 20px; }
-        .mock-stats { grid-template-columns: 1fr; }
-        .mock-app { padding: 24px 20px 88px; }
+        .mock-app { padding: 24px 24px 88px; }
       }
-      @media (max-width: 640px) {
+      @media (max-width: 600px) {
         .hero { padding: 40px 0 56px; }
         .flow-sec { padding: 48px 0 56px; }
         .demo-status { display: none; }
+        .mock-app { padding: 20px 16px 88px; gap: 18px; }
+        .mock-stats { grid-template-columns: 1fr; }
+        .mock-stat-val { font-size: 21px; }
         .pp-sidebar { width: calc(100% - 24px); }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -846,7 +851,7 @@
         </a>
         <nav class="nav-links" aria-label="Primary">
           <a href="./privacy.html">Privacy</a>
-          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/iamshawndeng/marklet/issues" target="_blank" rel="noreferrer">Report an issue</a>
         </nav>
       </div>
     </header>
@@ -1095,12 +1100,9 @@
 
     <footer>
       <div class="wrap foot-inner">
-        <span class="foot-author">Marklet · Built by <a href="https://shawndeng.com" target="_blank" rel="noreferrer">Shawn Deng</a></span>
+        <span class="foot-author">Made by <a href="https://shawndeng.com" target="_blank" rel="noreferrer">Shawn Deng</a></span>
         <div class="foot-links">
-          <a href="./privacy.html">Privacy</a>
-          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
           <a href="https://github.com/iamshawndeng/marklet/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">Changelog</a>
-          <a href="https://github.com/iamshawndeng/marklet/issues" target="_blank" rel="noreferrer">Feedback</a>
         </div>
       </div>
     </footer>
@@ -1192,14 +1194,17 @@
 
           // Pins
           pinsLayer.innerHTML = '';
+          const vw = viewport.clientWidth;
           comments.forEach((c) => {
             const rect = getElRect(c.el);
             if (!rect) return;
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'pp-pin' + (c.id === activeId ? ' is-active' : '') + (c.resolved ? ' is-resolved' : '');
-            btn.style.left = Math.max(8, rect.right - 14) + 'px';
-            btn.style.top = Math.max(8, rect.top - 14) + 'px';
+            const pinLeft = Math.min(vw - 36, Math.max(8, rect.right - 14));
+            const pinTop = Math.max(8, rect.top - 12);
+            btn.style.left = pinLeft + 'px';
+            btn.style.top = pinTop + 'px';
             btn.setAttribute('aria-label', `Open comment ${c.id}`);
             btn.innerHTML = `<span class="pp-pin-inner">${c.id}</span>`;
             btn.addEventListener('click', (e) => {
@@ -1233,17 +1238,26 @@
             card.classList.add('is-open');
 
             if (rect) {
-              const vw = viewport.clientWidth;
               const vh = viewport.clientHeight;
-              const cw = 316;
+              const cw = card.offsetWidth || Math.min(312, vw - 24);
               const ch = card.offsetHeight || 190;
-              let left = rect.right + 16;
-              if (left + cw > vw - (sidebarOpen ? 320 : 16)) {
-                left = Math.max(16, rect.left - cw - 16);
-                if (left === 16 && rect.left < 180) left = Math.min(vw - cw - 16, rect.left);
-              }
+              const rightLimit = vw - (sidebarOpen && vw > 640 ? 316 : 12);
+              let left = rect.right + 14;
               let top = rect.top;
-              if (top + ch > vh - 76) top = Math.max(12, vh - ch - 76);
+
+              if (left + cw > rightLimit) {
+                left = rect.left - cw - 14;
+              }
+              if (left < 12) {
+                // Narrow screen: place popover cleanly below (or above) the element
+                left = Math.max(12, Math.min(rightLimit - cw, rect.right - cw));
+                top = rect.bottom + 10;
+                if (top + ch > vh - 72) {
+                  top = Math.max(12, rect.top - ch - 10);
+                }
+              } else if (top + ch > vh - 72) {
+                top = Math.max(12, vh - ch - 72);
+              }
               card.style.left = left + 'px';
               card.style.top = top + 'px';
             }
@@ -1386,6 +1400,9 @@
         });
 
         window.addEventListener('resize', render);
+        if (typeof ResizeObserver !== 'undefined') {
+          new ResizeObserver(render).observe(viewport);
+        }
         render();
       })();
     </script>
