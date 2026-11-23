@@ -7,7 +7,7 @@ Use this sheet when updating `release/marklet-v0.2.0.zip` on **Chrome Web Store*
 ## 1. Basic Listing Copy
 
 - **Name**:
-  `Marklet — Visual Comments for Async and AI Workflows`
+  `Marklet — Async Design Reviews for Web Prototypes`
 
 - **Short Description / Summary (119 chars, limit 132)**:
   `Figma-style feedback on any web prototype. Send your team a link for async reviews, merge comments, and export for AI.`

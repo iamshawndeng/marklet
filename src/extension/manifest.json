@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Marklet — Visual Comments for Async and AI Workflows",
+  "name": "Marklet — Async Design Reviews for Web Prototypes",
   "short_name": "Marklet",
   "version": "0.0.0",
-  "description": "Leave element-level comments on any webpage or prototype for async design feedback, team handoff, and agentic workflows.",
+  "description": "Figma-style feedback on any web prototype. Send your team a link for async reviews, merge comments, and export for AI.",
   "minimum_chrome_version": "114",
   "permissions": [
     "activeTab",
@@ -25,7 +25,7 @@
     "128": "icons/icon-128.png"
   },
   "action": {
-    "default_title": "Marklet — Visual Comments for Async and AI Workflows",
+    "default_title": "Marklet — Async Design Reviews for Web Prototypes",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

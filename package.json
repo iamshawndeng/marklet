@@ -1,8 +1,8 @@
 {
   "name": "marklet",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
-  "description": "Marklet — Visual Comments for Async and AI Workflows. Leave element-level comments on any webpage or prototype for async design feedback, team handoff, and agentic workflows.",
+  "description": "Marklet — Async Design Reviews for Web Prototypes. Figma-style feedback on any web prototype. Send your team a link for async reviews, merge comments, and export for AI.",
   "type": "module",
   "scripts": {
     "dev": "npm run check:layers && npm run typecheck && node scripts/build.mjs --dev",
