@@ -9,7 +9,7 @@ Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript
 
 ![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
 
-![Marklet — Async team reviews, zero servers](./docs/images/screenshot-4-async.png)
+![Marklet — Async team reviews, no setup](./docs/images/screenshot-4-async.png)
 
 <p align="center">
   <img src="./docs/images/screenshot-2-brief.png" alt="Export a Design Brief in one click" width="49%" />
@@ -17,7 +17,7 @@ Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript
 </p>
 
 ## Highlights
-- **Zero-server async team collaboration (`Send` & `Merge`)**: Reviewers click **Send** to copy a compressed feedback link (pastes as a clean hyperlink in Teams, Slack, or email). The page owner opens each link and clicks **Merge** to combine everyone's comments onto the page without overwriting existing feedback — no third-party cloud, no workspace setup, and page access stays with your site.
+- **Async team collaboration (`Send` & `Merge`)**: Reviewers click **Send** to copy a clean feedback link into Teams, Slack, or email. The page owner opens each link and clicks **Merge** to combine everyone's comments onto the page without overwriting existing feedback — no workspace setup, no cloud uploads, and page access stays with your site.
 - **Export Design Brief (`.zip`)**: One-click export of `brief.md` + DOM selectors + cropped element screenshots — ready to drop straight into AI coding tools (Antigravity, Cursor, Claude, Codex, Copilot).
 - **Optional Microsoft & Google Sign-In**: Sync your real name and profile avatar onto comments with read-only OAuth (`User.Read` / `openid profile email`), or stay 100% anonymous with zero network requests.
 - **Explicit, least-privilege activation**: Uses `activeTab`, `scripting`, `storage`, and optional `identity` — zero `<all_urls>`, zero background tab monitoring. Marklet never touches a page until you click **Start Review**.

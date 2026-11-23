@@ -455,7 +455,7 @@ function PopupApp() {
           <div class="guide-head">
             <div>
               <div class="guide-title">How Marklet works</div>
-              <div class="guide-sub">Zero-server async reviews for teams &amp; AI</div>
+              <div class="guide-sub">Async visual reviews for teams &amp; AI</div>
             </div>
             <button class="guide-close" aria-label="Close guide" onClick={() => setHelpOpen(false)}>
               ×

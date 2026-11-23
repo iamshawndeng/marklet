@@ -26,14 +26,14 @@ KEY FEATURES
 • Visual context snapshots: Automatically captures a cropped screenshot of the target element so feedback stays clear even after a page changes.
 • Smart DOM anchoring: Re-attaches comments reliably across reloads and inside modals or dialogs.
 • Export Design Brief (.zip): Package open comments, selectors, discussion context, and cropped element screenshots into a single .zip ready for teammates or AI coding agents.
-• Zero-server team handoff: Click Send to copy a compressed feedback link (formatted as a clean hyperlink for Teams, Slack, or email). Teammates open the link and merge comments in one click — no backend server or file uploads required.
+• Async team handoff: Click Send to copy a clean feedback link for Teams, Slack, or email. Teammates open the link and merge comments in one click — no workspace setup or cloud uploads required.
 • Optional Microsoft & Google Sign-In: Sign in to automatically sync your real name and avatar onto comments, or use Marklet completely anonymously with zero network requests.
 • Works everywhere: Review production web pages, staging apps, or local HTML prototypes (enable "Allow access to file URLs" in extension settings for file:// pages).
 • Light & Dark mode: Automatically matches your system theme.
 
 PRIVACY & SECURITY FIRST
 • Zero background tracking: Marklet never reads or injects into a page until you explicitly click "Start Review".
-• Zero backend servers: All comments and snapshots stay privately on your device using browser local storage. Optional Microsoft / Google sign-in communicates directly with Microsoft or Google OAuth only to load your display name and avatar locally.
+• Private & local by default: All comments and snapshots stay privately on your device using browser local storage. Optional Microsoft / Google sign-in communicates directly with Microsoft or Google only to load your display name and avatar locally.
 ```
 
 ---
