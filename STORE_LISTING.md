@@ -1,6 +1,6 @@
 # Store Listing & Review Submission Kit
 
-Use this sheet when submitting `release/marklet-v0.1.0.zip` to **Chrome Web Store** and **Microsoft Edge Add-ons**.
+Use this sheet when submitting `release/marklet-v0.2.0.zip` to **Chrome Web Store** and **Microsoft Edge Add-ons**.
 
 ---
 
@@ -26,12 +26,14 @@ KEY FEATURES
 • Visual context snapshots: Automatically captures a cropped screenshot of the target element so feedback stays clear even after a page changes.
 • Smart DOM anchoring: Re-attaches comments reliably across reloads and inside modals or dialogs.
 • Export Design Brief (.zip): Package open comments, selectors, discussion context, and cropped element screenshots into a single .zip ready for teammates or AI coding agents.
+• Zero-server team handoff: Click Send to copy a compressed feedback link (formatted as a clean hyperlink for Teams, Slack, or email). Teammates open the link and merge comments in one click — no backend server or file uploads required.
+• Optional Microsoft & Google Sign-In: Sign in to automatically sync your real name and avatar onto comments, or use Marklet completely anonymously with zero network requests.
 • Works everywhere: Review production web pages, staging apps, or local HTML prototypes (enable "Allow access to file URLs" in extension settings for file:// pages).
 • Light & Dark mode: Automatically matches your system theme.
 
 PRIVACY & SECURITY FIRST
 • Zero background tracking: Marklet never reads or injects into a page until you explicitly click "Start Review".
-• Zero network requests: All comments and snapshots stay privately on your device using browser local storage, with built-in JSON export/import and one-click clear controls.
+• Zero backend servers: All comments and snapshots stay privately on your device using browser local storage. Optional Microsoft / Google sign-in communicates directly with Microsoft or Google OAuth only to load your display name and avatar locally.
 ```
 
 ---
@@ -47,7 +49,9 @@ PRIVACY & SECURITY FIRST
 - **`scripting`**:
   > Used to inject Marklet's isolated Shadow DOM commenting overlay (`content.js`) on demand into the active tab after the user starts a review.
 - **`storage`**:
-  > Used to store the user's comments, replies, display name preference, and cropped element screenshots locally on their device via `chrome.storage.local`.
+  > Used to store the user's comments, replies, optional display profile, and cropped element screenshots locally on their device via `chrome.storage.local`.
+- **`identity`** & OAuth host permissions (`login.microsoftonline.com`, `graph.microsoft.com`, `accounts.google.com`, `www.googleapis.com`):
+  > Used strictly on explicit user action when clicking "Microsoft" or "Google" in the extension popup to authenticate via standard OAuth 2.0 (`chrome.identity.launchWebAuthFlow`) and fetch only the user's display name, email, and profile photo into local browser storage. Never invoked in the background and never requests file or browsing permissions.
 
 ### Remote Code Declaration
 - **Are you using remote code?** → **No, I am not using remote code.** (All JS/CSS is bundled inside the extension package.)

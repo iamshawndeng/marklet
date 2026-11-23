@@ -8,6 +8,9 @@
  *   3. MARKLET_SYNC_BADGE    -> updates the per-tab toolbar badge for active annotated tabs.
  */
 
+import { signInWithMicrosoft, signOutMicrosoft } from './msAuth';
+import { signInWithGoogle } from './googleAuth';
+
 const BADGE_BG = '#C96442';
 
 type ActivateAction = 'enable' | 'disable' | 'pick' | 'sidebar';
@@ -104,6 +107,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     sendResponse({ ok: true });
     return false;
+  }
+
+  if (msg.type === 'MARKLET_MS_SIGN_IN') {
+    signInWithMicrosoft().then((res) => sendResponse(res));
+    return true;
+  }
+
+  if (msg.type === 'MARKLET_GOOGLE_SIGN_IN') {
+    signInWithGoogle().then((res) => sendResponse(res));
+    return true;
+  }
+
+  if (msg.type === 'MARKLET_MS_SIGN_OUT') {
+    signOutMicrosoft()
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
   }
 
   if (msg.type === 'MARKLET_NAVIGATE_AND_RESUME' && sender.tab?.id !== undefined && typeof msg.url === 'string') {

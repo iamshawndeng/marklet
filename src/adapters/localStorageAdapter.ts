@@ -211,6 +211,18 @@ export function createLocalStorageAdapter(options: LocalStorageAdapterOptions = 
       );
     },
 
+    async mergeComments(pageKey: string, pageUrl: string, incoming: CommentThread[]) {
+      const existing = readThreads(pageKey);
+      const { threads, added, updated } = mergeThreadLists(existing, incoming, pageKey, pageUrl);
+      if (added > 0 || updated > 0) {
+        const index = readIndex();
+        for (const t of threads) index[t.id] = pageKey;
+        store.setItem(indexKey, JSON.stringify(index));
+        writeThreads(pageKey, threads);
+      }
+      return { added, updated };
+    },
+
     subscribe(pageKey, listener) {
       let set = listeners.get(pageKey);
       if (!set) listeners.set(pageKey, (set = new Set()));
@@ -218,6 +230,66 @@ export function createLocalStorageAdapter(options: LocalStorageAdapterOptions = 
       return () => set!.delete(listener);
     },
   };
+}
+
+/**
+ * Pure merge helper: merges incoming threads into existing page threads by `id`.
+ * - New threads get sequential pin numbers after the current max.
+ * - Existing threads receive any unseen replies (deduped by reply id) and newer status updates.
+ */
+export function mergeThreadLists(
+  existing: CommentThread[],
+  incoming: CommentThread[],
+  pageKey: string,
+  pageUrl: string,
+): { threads: CommentThread[]; added: number; updated: number } {
+  const result = clone(existing);
+  const byId = new Map<string, CommentThread>(result.map((t) => [t.id, t]));
+  let maxPin = result.reduce((m, t) => Math.max(m, t.pinNumber), 0);
+  let added = 0;
+  let updated = 0;
+
+  for (const inc of incoming) {
+    const cur = byId.get(inc.id);
+    if (!cur) {
+      const nextThread: CommentThread = {
+        ...clone(inc),
+        pageKey,
+        url: pageUrl,
+        pinNumber: ++maxPin,
+      };
+      result.push(nextThread);
+      byId.set(nextThread.id, nextThread);
+      added++;
+      continue;
+    }
+
+    let changed = false;
+    const replyIds = new Set(cur.replies.map((r) => r.id));
+    for (const r of inc.replies) {
+      if (!replyIds.has(r.id)) {
+        cur.replies.push({ ...clone(r), threadId: cur.id });
+        replyIds.add(r.id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      cur.replies.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+    }
+    if (inc.updatedAt > cur.updatedAt) {
+      if (inc.status !== cur.status) {
+        cur.status = inc.status;
+        cur.resolvedAt = inc.resolvedAt;
+        cur.resolvedBy = inc.resolvedBy ? clone(inc.resolvedBy) : undefined;
+        changed = true;
+      }
+      if (changed) cur.updatedAt = inc.updatedAt;
+    }
+    if (changed) updated++;
+  }
+
+  result.sort((a, b) => a.pinNumber - b.pinNumber);
+  return { threads: result, added, updated };
 }
 
 function clone<T>(v: T): T {

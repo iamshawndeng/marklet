@@ -165,6 +165,12 @@ export interface StorageAdapter {
 
   /* ---- optional capabilities ---- */
   deleteThread?(threadId: string): Promise<void>;
+  /** Merge incoming threads (e.g. from a teammate's share link) into this page without overwriting existing comments. */
+  mergeComments?(
+    pageKey: string,
+    pageUrl: string,
+    incoming: CommentThread[],
+  ): Promise<{ added: number; updated: number }>;
   /** List pages on the same web origin (`http:`/`https:`) that have comments. */
   listSitePages?(origin: string): Promise<SitePageSummary[]>;
   /** Push-style updates (other tabs, realtime backends). Returns an unsubscribe function. */

@@ -1,6 +1,6 @@
 {
   "name": "marklet",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Marklet — Visual Comments for Async and AI Workflows. Leave element-level comments on any webpage or prototype for async design feedback, team handoff, and agentic workflows.",
   "type": "module",

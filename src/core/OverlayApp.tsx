@@ -17,6 +17,14 @@ import type {
 } from '../adapters/types';
 import { ElementPicker, describeElement, detectOverlayContext, generateAnchor, resolveAnchor, type ResolvedAnchor } from './anchor';
 import { buildAiIterationMarkdown, buildAiIterationZip } from './exportPrompt';
+import {
+  copyShareLinkToClipboard,
+  decodeShareFromUrl,
+  encodeShareLink,
+  stripShareHashFromCurrentUrl,
+  type DecodedSharePayload,
+  type EncodedShareLink,
+} from './shareLink';
 
 export interface OverlayController {
   setEnabled(enabled: boolean): void;
@@ -97,6 +105,8 @@ export function OverlayApp(props: OverlayAppProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [otherSitePages, setOtherSitePages] = useState<SitePageSummary[]>([]);
+  const [incomingShare, setIncomingShare] = useState<DecodedSharePayload | null>(null);
+  const [shareCard, setShareCard] = useState<EncodedShareLink | null>(null);
   const [resolveVersion, setResolveVersion] = useState(0);
   const [, setTick] = useState(0);
 
@@ -283,6 +293,26 @@ export function OverlayApp(props: OverlayAppProps) {
       cancelled = true;
     };
   }, [storage, pageMeta.origin, pageKey, threads, sidebarOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    decodeShareFromUrl(pageUrl, pageKey).then((decoded) => {
+      if (cancelled || !decoded) return;
+      setIncomingShare(decoded);
+      if (enabledRef.current) {
+        setSidebarOpen(true, { yielded: false });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pageUrl, pageKey, setSidebarOpen]);
+
+  useEffect(() => {
+    if (enabled && incomingShare && !sidebarOpenRef.current) {
+      setSidebarOpen(true, { yielded: false });
+    }
+  }, [enabled, incomingShare, setSidebarOpen]);
 
   const navigateToSitePage = useCallback(
     (targetUrl: string) => {
@@ -634,6 +664,71 @@ export function OverlayApp(props: OverlayAppProps) {
     showToast('Design brief exported', 'success');
   };
 
+  const shareLinkLabel = (count: number) => {
+    const title = (document.title || pageMeta.path || 'this page').trim().slice(0, 50);
+    return `Marklet feedback (${count} ${count === 1 ? 'comment' : 'comments'} on ${title})`;
+  };
+
+  const handleShareFeedback = async () => {
+    if (threads.length === 0) return;
+    const sharedBy = user?.mode === 'named' && user.name.trim() ? user.name.trim() : 'A teammate';
+    const encoded = await encodeShareLink(pageUrl, threads, sharedBy);
+    setShareCard(encoded);
+    if (!encoded.tooLong) {
+      await copyShareLinkToClipboard(encoded.url, shareLinkLabel(encoded.count));
+      showToast('Feedback link copied', 'success');
+    }
+  };
+
+  const handleCopyShareAgain = async () => {
+    if (!shareCard || shareCard.tooLong) return;
+    await copyShareLinkToClipboard(shareCard.url, shareLinkLabel(shareCard.count));
+    showToast('Feedback link copied', 'success');
+  };
+
+  const handleDownloadJsonFallback = () => {
+    const json = JSON.stringify(
+      { version: 1, exportedAt: new Date().toISOString(), pageKey, threads },
+      null,
+      2,
+    );
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `marklet-feedback-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShareCard(null);
+    showToast('Downloaded feedback file', 'success');
+  };
+
+  const handleMergeIncoming = async () => {
+    if (!incomingShare || !storage.mergeComments) return;
+    try {
+      const { added, updated } = await storage.mergeComments(pageKey, pageUrl, incomingShare.threads);
+      await refresh();
+      stripShareHashFromCurrentUrl();
+      const who = incomingShare.sharedBy;
+      setIncomingShare(null);
+      if (added > 0) {
+        showToast(`Merged ${added} ${added === 1 ? 'comment' : 'comments'} from ${who}`, 'success');
+      } else if (updated > 0) {
+        showToast(`Updated ${updated} ${updated === 1 ? 'thread' : 'threads'} from ${who}`, 'success');
+      } else {
+        showToast('All shared comments already merged', 'info');
+      }
+    } catch (err) {
+      console.error('[Marklet] merge failed', err);
+      showToast('Failed to merge shared comments', 'error');
+    }
+  };
+
+  const handleDismissIncoming = () => {
+    stripShareHashFromCurrentUrl();
+    setIncomingShare(null);
+  };
+
   /* ---------------- derived layout ---------------- */
 
   const openCount = threads.filter((t) => t.status === 'open').length;
@@ -813,10 +908,21 @@ export function OverlayApp(props: OverlayAppProps) {
           pageUrl={pageUrl}
           siteHost={pageMeta.host}
           otherSitePages={otherSitePages}
+          incomingShare={incomingShare}
+          shareCard={shareCard}
+          onShareFeedback={handleShareFeedback}
+          onCopyShareAgain={handleCopyShareAgain}
+          onCloseShareCard={() => setShareCard(null)}
+          onDownloadJsonFallback={handleDownloadJsonFallback}
+          onMergeIncoming={handleMergeIncoming}
+          onDismissIncoming={handleDismissIncoming}
           onNavigatePage={navigateToSitePage}
           onCopyBrief={copyAiBrief}
           onDownloadBrief={downloadAiBrief}
-          onClose={() => setSidebarOpen(false)}
+          onClose={() => {
+            setShareCard(null);
+            setSidebarOpen(false);
+          }}
         />
       )}
 
@@ -1302,6 +1408,14 @@ interface SidebarProps {
   pageUrl: string;
   siteHost: string | null;
   otherSitePages: SitePageSummary[];
+  incomingShare: DecodedSharePayload | null;
+  shareCard: EncodedShareLink | null;
+  onShareFeedback: () => void;
+  onCopyShareAgain: () => void;
+  onCloseShareCard: () => void;
+  onDownloadJsonFallback: () => void;
+  onMergeIncoming: () => void;
+  onDismissIncoming: () => void;
   onTabChange: (tab: 'open' | 'resolved') => void;
   onSelect: (t: CommentThread) => void;
   onNavigatePage: (url: string) => void;
@@ -1378,6 +1492,25 @@ function Sidebar(p: SidebarProps) {
       </div>
 
       <div class="pp-sidebar-body">
+        {p.incomingShare && (
+          <div class="pp-merge-card">
+            <div class="pp-merge-title">
+              {p.incomingShare.sharedBy} shared {p.incomingShare.threads.length}{' '}
+              {p.incomingShare.threads.length === 1 ? 'comment' : 'comments'}
+            </div>
+            <div class="pp-merge-desc">
+              Add shared feedback from your team to this page without overwriting existing comments.
+            </div>
+            <div class="pp-merge-actions">
+              <button class="pp-merge-btn" onClick={p.onMergeIncoming}>
+                Merge {p.incomingShare.threads.length} {p.incomingShare.threads.length === 1 ? 'comment' : 'comments'}
+              </button>
+              <button class="pp-merge-dismiss" onClick={p.onDismissIncoming}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
         {visible.length === 0 ? (
           <div class="pp-empty">
             <div class="pp-empty-title">{tab === 'open' ? 'No open comments' : 'No resolved comments'}</div>
@@ -1467,18 +1600,57 @@ function Sidebar(p: SidebarProps) {
       </div>
 
       <div class="pp-sidebar-foot">
-        <button
-          class={cx('pp-brief-btn', exported && 'is-exported')}
-          title="Export Design Brief (.zip with Markdown & element screenshots)"
-          disabled={!hasThreads}
-          onClick={handleExportClick}
-        >
-          <span key={exported ? 'done' : 'idle'} class="pp-brief-btn-content">
-            {exported ? <IconCheck small /> : <IconDownload />}
-            <span>{exported ? 'Exported .zip' : 'Export Design Brief'}</span>
-          </span>
-        </button>
-        <p class="pp-brief-note">Downloads a .zip ready for AI coding tools</p>
+        {p.shareCard && (
+          <div class="pp-share-card">
+            <div class="pp-share-card-head">
+              <span class="pp-share-card-title">
+                {p.shareCard.tooLong ? 'Too many comments for a link' : 'Ready to send — link copied'}
+              </span>
+              <button class="pp-share-card-close" aria-label="Dismiss" onClick={p.onCloseShareCard}>
+                <IconClose />
+              </button>
+            </div>
+            <p class="pp-share-card-desc">
+              {p.shareCard.tooLong
+                ? `Download a .json file to send all ${p.shareCard.count} comments back.`
+                : `Paste in Teams, Slack, or email. Anyone with access to this page can open it and merge ${p.shareCard.count} ${p.shareCard.count === 1 ? 'comment' : 'comments'}.`}
+            </p>
+            <div class="pp-share-card-actions">
+              {p.shareCard.tooLong ? (
+                <button class="pp-share-primary" onClick={p.onDownloadJsonFallback}>
+                  Download .json
+                </button>
+              ) : (
+                <button class="pp-share-primary" onClick={p.onCopyShareAgain}>
+                  Copy link again
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        <div class="pp-foot-actions">
+          <button
+            class={cx('pp-brief-btn', exported && 'is-exported')}
+            title="Export Design Brief (.zip with Markdown & element screenshots)"
+            disabled={!hasThreads}
+            onClick={handleExportClick}
+          >
+            <span key={exported ? 'done' : 'idle'} class="pp-brief-btn-content">
+              {exported ? <IconCheck small /> : <IconDownload />}
+              <span>{exported ? 'Exported .zip' : 'Export Brief'}</span>
+            </span>
+          </button>
+          <button
+            class={cx('pp-send-link-btn', p.shareCard && 'is-active')}
+            title="Copy link to send comments back"
+            disabled={!hasThreads}
+            onClick={p.onShareFeedback}
+          >
+            <IconSend />
+            <span>Send</span>
+          </button>
+        </div>
+        <p class="pp-brief-note">Export .zip for AI tools · or Send a link back</p>
       </div>
     </aside>
   );
@@ -1601,6 +1773,13 @@ function Message({ author, time, text, clamp }: { author: UserProfile; time: str
 
 function Avatar({ user, small }: { user: UserProfile; small?: boolean }) {
   const initial = user.mode === 'self-note' ? 'S' : Array.from(user.name.trim())[0] ?? '?';
+  if (user.avatarUrl) {
+    return (
+      <span class={cx('pp-avatar', small && 'is-sm')} title={user.name}>
+        <img class="pp-avatar-img" src={user.avatarUrl} alt={user.name} />
+      </span>
+    );
+  }
   return (
     <span class={cx('pp-avatar', small && 'is-sm')} style={{ background: user.color ?? '#d97757' }} title={user.name}>
       {initial}
@@ -1702,6 +1881,11 @@ const IconLocate = () => (
 const IconDownload = () => (
   <Svg>
     <path d="M8 2.75v7.5M5 7.5l3 3 3-3M3 12.75h10" />
+  </Svg>
+);
+const IconSend = () => (
+  <Svg size={14}>
+    <path d="M13.5 2.5 7.25 8.75M13.5 2.5l-4 11-2.25-4.75L2.5 6.5l11-4Z" />
   </Svg>
 );
 const IconAlert = () => (

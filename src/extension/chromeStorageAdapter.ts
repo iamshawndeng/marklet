@@ -13,7 +13,7 @@ import type {
   StorageAdapter,
   UserProfile,
 } from '../adapters/types';
-import { createId, resolvePageKey, type PageKeyStrategy } from '../adapters/localStorageAdapter';
+import { createId, mergeThreadLists, resolvePageKey, type PageKeyStrategy } from '../adapters/localStorageAdapter';
 import { SELF_NOTE_NAME } from '../adapters/authAdapter';
 
 export const STORAGE_NS = 'marklet:v1';
@@ -203,6 +203,21 @@ export function createChromeStorageAdapter(): StorageAdapter {
       await updatePageSummary(pageKey, next);
     },
 
+    async mergeComments(pageKey: string, pageUrl: string, incoming: CommentThread[]) {
+      const existing = await getRaw<CommentThread[]>(threadsKeyFor(pageKey), []);
+      const { threads, added, updated } = mergeThreadLists(existing, incoming, pageKey, pageUrl);
+      if (added > 0 || updated > 0) {
+        const index = await getRaw<Record<string, string>>(INDEX_KEY, {});
+        for (const t of threads) index[t.id] = pageKey;
+        await setRaw({
+          [threadsKeyFor(pageKey)]: threads,
+          [INDEX_KEY]: index,
+        });
+        await updatePageSummary(pageKey, threads, pageUrl);
+      }
+      return { added, updated };
+    },
+
     async listSitePages(origin: string) {
       if (!/^https?:\/\//i.test(origin)) return [];
       const pages = await getRaw<Record<string, PageSummary>>(PAGES_KEY, {});
@@ -279,6 +294,11 @@ export function isSafeHttpOrFileUrl(urlStr: string): boolean {
   } catch {
     return false;
   }
+}
+
+export async function getPageComments(pageKey: string): Promise<CommentThread[]> {
+  const threads = await getRaw<CommentThread[]>(threadsKeyFor(pageKey), []);
+  return clone(threads).sort((a, b) => a.pinNumber - b.pinNumber);
 }
 
 export async function listRecentPages(): Promise<PageSummary[]> {

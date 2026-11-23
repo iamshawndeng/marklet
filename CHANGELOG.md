@@ -2,6 +2,17 @@
 
 All notable changes to Marklet are documented in this file.
 
+## [0.2.0] - 2026-11-22
+
+### Added
+- **Zero-server async team reviews (`Send` & `Merge`)**: Click **Send** (in the Comments panel footer or extension popup) to compress your comments into a shareable `#marklet=` link copied as a clean rich hyperlink for Teams, Slack, or email. Teammates open the link and click **Merge** to combine everyone's comments onto the page without overwriting existing feedback, then export a single `.zip` Design Brief for AI coding tools.
+- **Optional Microsoft & Google Sign-In**: Sign in with a Microsoft (Entra ID / Outlook) or Google account to automatically sync your real name and profile avatar onto comments — zero backend server, read-only profile scopes (`User.Read` / `openid profile email`), completely optional.
+- **Interactive "How Marklet works" guide**: Added a `?` help button in the extension popup header with custom Light/Dark vector illustrations explaining the 3-step Mark → Send → Merge & Export async workflow and keyboard shortcuts.
+
+### Improved
+- **Cleaner Popup layout & hierarchy**: Moved `Feedback ↗` into the `···` overflow menu, promoted primary actions (`Send`, `Show comments`, `Review & Merge`) with clear visual hierarchy, and aligned status notifications directly below the action buttons.
+- **Updated Privacy Policy & Store Listing**: Documented optional Microsoft/Google OAuth sign-in and zero-server URL hash sharing clearly in `PRIVACY.md` and `STORE_LISTING.md`.
+
 ## [0.1.1] - 2026-11-21
 
 ### Added
