@@ -758,11 +758,17 @@
               </div>
             </div>
             <div class="m-sb-foot">
-              <div class="m-brief-btn">
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.75v7.5M5 7.5l3 3 3-3M3 12.75h10"/></svg>
-                <span>Export Design Brief</span>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <div class="m-brief-btn" style="flex:1;">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.75v7.5M5 7.5l3 3 3-3M3 12.75h10"/></svg>
+                  <span>Export Brief</span>
+                </div>
+                <div style="height:38px;padding:0 13px;border-radius:10px;border:1px solid #e6e5e0;background:#fff;color:#141413;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5 7.25 8.75M13.5 2.5l-4 11-2.25-4.75L2.5 6.5l11-4Z"/></svg>
+                  <span>Send</span>
+                </div>
               </div>
-              <p class="m-brief-note">Downloads a .zip ready for AI coding tools</p>
+              <p class="m-brief-note">Export .zip for AI tools · or Send a link back</p>
             </div>
           </aside>
         </div>
@@ -841,14 +847,30 @@
               <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
             </svg>
             <strong style="font-size:15px;">Marklet</strong>
-            <span class="pm-ver">v0.1.0</span>
+            <span class="pm-ver">v0.2.0</span>
             <span style="flex:1"></span>
-            <span style="font-size:12px;color:#5e5d59;">Feedback ↗ &nbsp; ···</span>
+            <span style="font-size:13px;color:#5e5d59;display:inline-flex;align-items:center;gap:10px;">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M6.25 6.35a1.85 1.85 0 0 1 3.55.7c0 1.15-1.8 1.4-1.8 2.45"/><circle cx="8" cy="11.65" r="0.6" fill="currentColor" stroke="none"/></svg>
+              <span>···</span>
+            </span>
           </div>
           <div class="pm-sec">
             <div class="pm-title">Workspace Overview · Acme Cloud</div>
             <div class="pm-host">https://staging.acmecloud.app</div>
             <div class="pm-btn">Start Review</div>
+          </div>
+          <div class="pm-sec" style="border-top:1px solid #f0efeb;padding-top:14px;padding-bottom:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="height:36px;border-radius:10px;border:1px solid #e6e5e0;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px;font-weight:500;">
+                <svg width="13" height="13" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+                <span>Microsoft</span>
+              </div>
+              <div style="height:36px;border-radius:10px;border:1px solid #e6e5e0;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px;font-weight:500;">
+                <svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.83.86-3.04.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z" fill="#34A853"/><path d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3-2.33Z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58Z" fill="#EA4335"/></svg>
+                <span>Google</span>
+              </div>
+            </div>
+            <div style="margin-top:6px;font-size:11px;color:#87867f;text-align:center;">Sign in to sync your name &amp; avatar (optional)</div>
           </div>
           <div class="pm-foot">
             <span class="pm-dot"></span>
@@ -864,9 +886,12 @@
               <path d="M56 54C56 41.85 65.85 32 78 32C90.15 32 100 41.85 100 54C100 66.15 90.15 76 78 76H62C58.69 76 56 73.31 56 70V54Z" fill="#C96442" />
             </svg>
             <strong style="font-size:15px;">Marklet</strong>
-            <span class="pm-ver">v0.1.0</span>
+            <span class="pm-ver">v0.2.0</span>
             <span style="flex:1"></span>
-            <span style="font-size:12px;color:#a8a8a1;">Feedback ↗ &nbsp; ···</span>
+            <span style="font-size:13px;color:#a8a8a1;display:inline-flex;align-items:center;gap:10px;">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M6.25 6.35a1.85 1.85 0 0 1 3.55.7c0 1.15-1.8 1.4-1.8 2.45"/><circle cx="8" cy="11.65" r="0.6" fill="currentColor" stroke="none"/></svg>
+              <span>···</span>
+            </span>
           </div>
           <div class="pm-sec">
             <div class="pm-title">Workspace Overview · Acme Cloud</div>
@@ -875,7 +900,19 @@
               <span class="pm-chip green"><span style="width:5px;height:5px;border-radius:50%;background:#7fb069;"></span>Reviewing</span>
               <span class="pm-chip open">2 open comments</span>
             </div>
-            <div class="pm-btn stop">Stop Review</div>
+            <div class="pm-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5 7.25 8.75M13.5 2.5l-4 11-2.25-4.75L2.5 6.5l11-4Z"/></svg>
+              <span>Send 2 comments</span>
+            </div>
+            <div class="pm-btn stop" style="margin-top:8px;height:36px;color:#a8a8a1;">Stop Review</div>
+          </div>
+          <div class="pm-sec" style="border-top:1px solid #2e2e2a;padding-top:12px;padding-bottom:12px;display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:50%;background:#c96442;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;">S</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12.5px;font-weight:600;color:#f3f3ef;">Shawn Deng</div>
+              <div style="font-size:11px;color:#7c7c76;">shawn@acmecloud.com</div>
+            </div>
+            <span style="padding:4px 9px;border-radius:7px;border:1px solid #383834;background:#2a2a27;color:#a8a8a1;font-size:11px;">Sign out</span>
           </div>
           <div class="pm-foot">
             <span class="pm-dot on"></span>
@@ -903,5 +940,17 @@
         <p class="promo-sub">Visual comments for UI.</p>
       </div>
     </div>
+    <script>
+      const only = new URLSearchParams(location.search).get('only');
+      if (only) {
+        document.body.style.padding = '0';
+        document.body.style.gap = '0';
+        document.body.style.background = 'transparent';
+        document.querySelectorAll('.frame').forEach((el) => {
+          if (el.id === only) el.style.zoom = '1';
+          else el.style.display = 'none';
+        });
+      }
+    </script>
   </body>
 </html>
