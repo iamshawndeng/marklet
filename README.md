@@ -9,18 +9,20 @@ Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript
 
 ![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
 
+![Marklet — Async team reviews, zero servers](./docs/images/screenshot-4-async.png)
+
 <p align="center">
   <img src="./docs/images/screenshot-2-brief.png" alt="Export a Design Brief in one click" width="49%" />
   <img src="./docs/images/screenshot-3-privacy.png" alt="Private by design. Light & Dark." width="49%" />
 </p>
 
 ## Highlights
-- **Explicit, least-privilege activation**: Uses only `activeTab`, `scripting`, and `storage` — zero `<all_urls>`, zero background tab monitoring, zero network requests. Marklet never touches a page until you click **Start Review**.
-- **Resilient element anchoring**: Composite DOM anchoring (`data-testid` → stable `id` → semantic CSS selector → structural path + text/geometry fallback) with modal/dialog context detection.
-- **Visual element snapshots**: Automatically captures a cropped screenshot of the target element with a clean highlight frame for every comment.
-- **Export Design Brief (`.zip`)**: One-click export of `brief.md` + cropped element screenshots — ready to share with teammates or drop straight into AI coding tools (Antigravity, Cursor, Claude, Codex).
-- **Light & Dark mode**: Automatically adapts to your OS appearance.
-- **Works on web pages & local `file://` prototypes**: Review production sites, staging links, or local HTML files.
+- **Zero-server async team collaboration (`Send` & `Merge`)**: Reviewers click **Send** to copy a compressed feedback link (pastes as a clean hyperlink in Teams, Slack, or email). The page owner opens each link and clicks **Merge** to combine everyone's comments onto the page without overwriting existing feedback — no third-party cloud, no workspace setup, and page access stays with your site.
+- **Export Design Brief (`.zip`)**: One-click export of `brief.md` + DOM selectors + cropped element screenshots — ready to drop straight into AI coding tools (Antigravity, Cursor, Claude, Codex, Copilot).
+- **Optional Microsoft & Google Sign-In**: Sync your real name and profile avatar onto comments with read-only OAuth (`User.Read` / `openid profile email`), or stay 100% anonymous with zero network requests.
+- **Explicit, least-privilege activation**: Uses `activeTab`, `scripting`, `storage`, and optional `identity` — zero `<all_urls>`, zero background tab monitoring. Marklet never touches a page until you click **Start Review**.
+- **Resilient element anchoring & multi-page awareness**: Composite DOM anchoring (`data-testid` → `id` → semantic selector → structural path) with modal/dialog context detection and same-site multi-page navigation.
+- **Works everywhere (Light & Dark)**: Review production sites, internal tools, staging links, or local `file://` HTML prototypes.
 
 ## Architecture (3 Decoupled Layers)
 
