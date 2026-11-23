@@ -7,9 +7,9 @@ Built as a lightweight Chrome / Microsoft Edge Manifest V3 extension (TypeScript
 [![Install on Microsoft Edge Add-ons](https://img.shields.io/badge/Microsoft_Edge-Install_Marklet-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl)
 ![Chrome Web Store — In Review](https://img.shields.io/badge/Chrome_Web_Store-In_Review-5F6368?style=for-the-badge&logo=googlechrome&logoColor=white)
 
-![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
-
 ![Marklet — Async team reviews, no setup](./docs/images/screenshot-4-async.png)
+
+![Marklet — Visual comments on any UI](./docs/images/screenshot-1-hero.png)
 
 <p align="center">
   <img src="./docs/images/screenshot-2-brief.png" alt="Export a Design Brief in one click" width="49%" />
