@@ -309,9 +309,9 @@
         flex-shrink: 0;
       }
       .mock-btn.primary {
-        background: var(--text);
-        border-color: var(--text);
-        color: var(--bg);
+        background: color-mix(in srgb, var(--text) 8%, var(--surface));
+        border-color: color-mix(in srgb, var(--text) 18%, transparent);
+        color: var(--text);
       }
       .mock-stats {
         display: grid;
