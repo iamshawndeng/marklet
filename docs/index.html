@@ -3,17 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Marklet — Async design reviews on any webpage</title>
+    <title>Marklet — Figma-style feedback on any web prototype</title>
     <meta
       name="description"
-      content="Leave Figma-style visual comments on any webpage or local prototype, share feedback as a link, and export one brief for AI."
+      content="Leave Figma-style visual comments on any webpage or local HTML prototype, share async feedback via URL hash, and export one .zip Design Brief for AI."
     />
-    <meta property="og:title" content="Marklet — Async design reviews on any webpage" />
+    <link rel="canonical" href="https://iamshawndeng.github.io/marklet/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Marklet" />
+    <meta property="og:url" content="https://iamshawndeng.github.io/marklet/" />
+    <meta property="og:title" content="Marklet — Figma-style feedback on any web prototype" />
     <meta
       property="og:description"
-      content="Leave Figma-style visual comments on any webpage or local prototype, share feedback as a link, and export one brief for AI."
+      content="Send your team a link for async design reviews, merge every comment with zero servers, and export one .zip Design Brief for Cursor, Claude, Codex, or Antigravity."
     />
-    <meta property="og:image" content="./images/store-1-review.png" />
+    <meta property="og:image" content="https://iamshawndeng.github.io/marklet/images/store-1-review.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="800" />
+    <meta property="og:image:alt" content="Marklet visual comments overlay on a web prototype" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:creator" content="@shawnzpdeng" />
+    <meta name="twitter:title" content="Marklet — Figma-style feedback on any web prototype" />
+    <meta
+      name="twitter:description"
+      content="Async design reviews on any webpage. Zero-server URL hash sync, optional Microsoft & Google sign-in, and one-click .zip export for AI coding tools."
+    />
+    <meta name="twitter:image" content="https://iamshawndeng.github.io/marklet/images/store-1-review.png" />
     <link
       rel="icon"
       type="image/svg+xml"
@@ -189,8 +204,30 @@
         background: var(--surface-2);
         border-color: color-mix(in srgb, var(--text) 26%, transparent);
       }
+      .btn-primary {
+        background: var(--text);
+        color: var(--bg);
+        border-color: var(--text);
+        box-shadow: 0 2px 6px rgba(20, 20, 19, 0.14);
+      }
+      .btn-primary:hover {
+        background: color-mix(in srgb, var(--text) 88%, var(--bg));
+        border-color: color-mix(in srgb, var(--text) 88%, var(--bg));
+      }
       .btn:active { transform: scale(0.98); }
       .btn-icon { width: 17px; height: 17px; flex: none; display: block; }
+      .hero-meta {
+        margin: 12px 0 0;
+        font-size: 13px;
+        color: var(--text-3);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+      }
+      .hero-meta-dot {
+        opacity: 0.55;
+      }
 
       /* Browser window hosting the REAL Marklet overlay UI (no box-in-box wrapper) */
       .demo-win {
@@ -783,6 +820,75 @@
         color: var(--text-2);
       }
 
+      /* Privacy & AI workflow highlights */
+      .trust-sec {
+        padding: 56px 0 64px;
+        border-top: 1px solid var(--border);
+      }
+      .trust-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 20px;
+      }
+      .trust-card {
+        padding: 18px 18px 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .trust-title {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text);
+      }
+      .trust-desc {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--text-2);
+      }
+      .trust-desc code {
+        font: 500 11.5px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        color: var(--text);
+      }
+
+      /* Compact bottom CTA */
+      .cta-sec {
+        padding: 48px 0 56px;
+        border-top: 1px solid var(--border);
+      }
+      .cta-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .cta-title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .cta-sub {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: var(--text-2);
+      }
+      .cta-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
       /* Minimal footer */
       footer {
         padding: 32px 0 44px;
@@ -818,11 +924,15 @@
 
       @media (max-width: 900px) {
         .flow-grid { grid-template-columns: 1fr; gap: 20px; }
+        .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .mock-app { padding: 24px 24px 88px; }
       }
       @media (max-width: 600px) {
         .hero { padding: 40px 0 56px; }
         .flow-sec { padding: 48px 0 56px; }
+        .trust-sec { padding: 44px 0 52px; }
+        .trust-grid { grid-template-columns: 1fr; gap: 14px; }
+        .cta-sec { padding: 40px 0 48px; }
         .demo-status { display: none; }
         .mock-app { padding: 20px 16px 88px; gap: 18px; }
         .mock-stats { grid-template-columns: 1fr; }
@@ -850,8 +960,9 @@
           <span>Marklet</span>
         </a>
         <nav class="nav-links" aria-label="Primary">
+          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
           <a href="./privacy.html">Privacy</a>
-          <a href="https://github.com/iamshawndeng/marklet/issues" target="_blank" rel="noreferrer">Report an issue</a>
+          <a href="https://github.com/iamshawndeng/marklet/issues" target="_blank" rel="noreferrer">Feedback</a>
         </nav>
       </div>
     </header>
@@ -866,7 +977,8 @@
             </p>
             <div class="hero-actions">
               <a
-                class="btn"
+                class="btn btn-primary"
+                data-browser-cta="chrome"
                 href="https://chromewebstore.google.com/detail/marklet-%E2%80%94-visual-comments/pkiegfieoakiggifpgoliodceglkmdel"
                 target="_blank"
                 rel="noreferrer"
@@ -882,6 +994,7 @@
               </a>
               <a
                 class="btn"
+                data-browser-cta="edge"
                 href="https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl"
                 target="_blank"
                 rel="noreferrer"
@@ -905,6 +1018,13 @@
                 Install for Edge
               </a>
             </div>
+            <p class="hero-meta">
+              <span>Free &amp; open source</span>
+              <span class="hero-meta-dot" aria-hidden="true">·</span>
+              <span>Zero cloud uploads</span>
+              <span class="hero-meta-dot" aria-hidden="true">·</span>
+              <span>Works on live sites, staging apps &amp; local HTML</span>
+            </p>
           </div>
 
           <!-- Live browser window with REAL Marklet overlay UI -->
@@ -912,7 +1032,7 @@
               <div class="demo-chrome">
                 <div class="demo-dots" aria-hidden="true"><span></span><span></span><span></span></div>
                 <div class="demo-url">staging.acmecloud.app/dashboard</div>
-                <div class="demo-status">Try clicking pins or the toolbar</div>
+                <div class="demo-status">Click pins · Press C to comment · S for sidebar</div>
               </div>
 
               <div class="demo-viewport" id="demo-viewport">
@@ -1096,12 +1216,66 @@
           </div>
         </div>
       </section>
+      <section class="trust-sec" aria-label="Built for privacy and AI workflows">
+        <div class="wrap">
+          <div class="trust-grid">
+            <div class="trust-card">
+              <div class="trust-title">Zero-server link sync</div>
+              <p class="trust-desc">Comments compress into a clean <code>#marklet=</code> URL hash. No backend, no workspace setup, and no cloud uploads.</p>
+            </div>
+            <div class="trust-card">
+              <div class="trust-title">Least-privilege by design</div>
+              <p class="trust-desc">Zero <code>&lt;all_urls&gt;</code> permissions and no background tab tracking. Marklet only runs when you click Start Review.</p>
+            </div>
+            <div class="trust-card">
+              <div class="trust-title">Built for AI coding agents</div>
+              <p class="trust-desc">Exports <code>brief.md</code>, resilient DOM selectors, and cropped element PNGs ready for Cursor, Claude, Codex, Copilot, or Antigravity.</p>
+            </div>
+            <div class="trust-card">
+              <div class="trust-title">Optional Microsoft &amp; Google sign-in</div>
+              <p class="trust-desc">Sync your real name and avatar via read-only OAuth, or stay 100% anonymous with zero network requests.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-sec" aria-label="Install Marklet">
+        <div class="wrap cta-inner">
+          <div>
+            <h2 class="cta-title">Stop pasting annotated screenshots into chat</h2>
+            <p class="cta-sub">Install Marklet in seconds — free and open source for Chrome and Microsoft Edge.</p>
+          </div>
+          <div class="cta-actions">
+            <a
+              class="btn btn-primary"
+              data-browser-cta="chrome"
+              href="https://chromewebstore.google.com/detail/marklet-%E2%80%94-visual-comments/pkiegfieoakiggifpgoliodceglkmdel"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Install for Chrome
+            </a>
+            <a
+              class="btn"
+              data-browser-cta="edge"
+              href="https://microsoftedge.microsoft.com/addons/detail/marklet-%E2%80%94-visual-comments/pbalkephghpppkgfamcamkflfmnmcghl"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Install for Edge
+            </a>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
       <div class="wrap foot-inner">
         <span class="foot-author">Made by <a href="https://shawndeng.com" target="_blank" rel="noreferrer">Shawn Deng</a></span>
         <div class="foot-links">
+          <a href="https://x.com/shawnzpdeng" target="_blank" rel="noreferrer">X (@shawnzpdeng)</a>
+          <a href="https://github.com/iamshawndeng/marklet" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="./privacy.html">Privacy</a>
           <a href="https://github.com/iamshawndeng/marklet/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">Changelog</a>
         </div>
       </div>
@@ -1362,12 +1536,40 @@
           })
         );
 
-        const triggerSend = () => showToast('Feedback link copied');
-        const triggerExport = () => showToast('Exported design-brief.zip');
+        const triggerSend = () => showToast('Feedback link copied (#marklet=…)');
+        const triggerExport = () => showToast('Exported design-brief.zip (brief.md + selectors + PNGs)');
         document.getElementById('tool-send').addEventListener('click', triggerSend);
         document.getElementById('tool-export').addEventListener('click', triggerExport);
         document.getElementById('pp-sb-send').addEventListener('click', triggerSend);
         document.getElementById('pp-sb-export').addEventListener('click', triggerExport);
+
+        // Highlight the visitor's current browser CTA (Edge vs Chrome)
+        if (/\bEdg\//.test(navigator.userAgent)) {
+          document.querySelectorAll('[data-browser-cta="chrome"]').forEach((el) => el.classList.remove('btn-primary'));
+          document.querySelectorAll('[data-browser-cta="edge"]').forEach((el) => el.classList.add('btn-primary'));
+        }
+
+        // Demo keyboard shortcuts matching the real extension (C, S, Esc)
+        document.addEventListener('keydown', (e) => {
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.key === 'c' || e.key === 'C') {
+            picking = !picking;
+            if (picking) activeId = null;
+            render();
+          } else if (e.key === 's' || e.key === 'S') {
+            sidebarOpen = !sidebarOpen;
+            render();
+          } else if (e.key === 'Escape') {
+            if (picking) {
+              picking = false;
+              render();
+            } else if (activeId !== null) {
+              activeId = null;
+              render();
+            }
+          }
+        });
 
         // Drop a new real comment pin when in Comment mode
         viewport.querySelectorAll('[data-el]').forEach((el) => {

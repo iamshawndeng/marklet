@@ -62,7 +62,7 @@ npm run dev        # Development build with inline sourcemaps
 4. Open any webpage (or `demo/test-prototype.html`), click the **Marklet** toolbar icon, and choose **Start Review**.
 
 ## Privacy & Security
-Marklet makes **zero network requests** and stores all comments and screenshots locally in your browser via `chrome.storage.local`. See [PRIVACY.md](./PRIVACY.md) for full details.
+Marklet makes **zero network requests by default** and stores all comments and screenshots locally in your browser via `chrome.storage.local`. Optional Microsoft or Google sign-in only connects to official OAuth endpoints (`User.Read` / `openid profile email`) when you explicitly click sign-in. See [PRIVACY.md](./PRIVACY.md) for full details.
 
 ## Feedback & Author
 Built by Shawn Deng ([@shawnzpdeng](https://x.com/shawnzpdeng)). Have ideas or bug reports? Feel free to open a GitHub Issue or say hi on X!
